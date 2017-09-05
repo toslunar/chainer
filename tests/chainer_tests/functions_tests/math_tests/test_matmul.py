@@ -188,10 +188,12 @@ class TestBatchMatMul(unittest.TestCase):
 
     def _get_forward_answer(self, x1, x2, transa, transb):
         x1 = x1.reshape(x1.shape[:2] + (-1,))
+        self.assertEqual(x1.ndim, 3)
         if transa and x1.ndim >= 2:
             x1 = x1.swapaxes(-1, -2)
 
         x2 = x2.reshape(x2.shape[:2] + (-1,))
+        self.assertEqual(x2.ndim, 3)
         if transb and x2.ndim >= 2:
             x2 = x2.swapaxes(-1, -2)
 
