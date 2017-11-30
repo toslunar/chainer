@@ -898,13 +898,21 @@ Actual: {0}'''.format(type(data))
         # Initialize error by 1, if this is a loss variable
         if self._grad_var is None:
             if self.data.size != 1:
+                """
                 raise RuntimeError('Cannot backward non-scalar variable'
                                    ' without explicit grad')
-            with cuda.get_device_from_array(self.data) as device:
-                if device is cuda.DummyDevice:
-                    self.grad = numpy.ones_like(self.data)
-                else:
-                    self.grad = cuda.cupy.ones_like(self.data)
+                """
+                with cuda.get_device_from_array(self.data) as device:
+                    if device is cuda.DummyDevice:
+                        self.grad = numpy.full_like(self.data, numpy.nan)
+                    else:
+                        self.grad = cuda.cupy.full_like(self.data, numpy.nan)
+            else:
+                with cuda.get_device_from_array(self.data) as device:
+                    if device is cuda.DummyDevice:
+                        self.grad = numpy.ones_like(self.data)
+                    else:
+                        self.grad = cuda.cupy.ones_like(self.data)
         grads[self._node] = self._grad_var
 
         def add_cand(cand):
