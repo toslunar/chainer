@@ -896,7 +896,10 @@ Actual: {0}'''.format(type(data))
         grads = {}
 
         # Initialize error by 1, if this is a loss variable
-        if self.data.size == 1 and self._grad_var is None:
+        if self._grad_var is None:
+            if self.data.size != 1:
+                raise RuntimeError('Cannot backward non-scalar variable'
+                                   ' without explicit grad')
             with cuda.get_device_from_array(self.data) as device:
                 if device is cuda.DummyDevice:
                     self.grad = numpy.ones_like(self.data)
