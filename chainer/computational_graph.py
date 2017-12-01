@@ -1,3 +1,4 @@
+from collections import defaultdict
 import heapq
 
 from chainer import function_node
@@ -123,7 +124,6 @@ class ComputationalGraph(object):
                 ret += DotNode(node, self.function_style, self.show_name).label
 
         i = 0
-        # def draw_cluster(name, s, children):
         def draw_clusters(cs):
             nonlocal i, ret
             for name, s, children in cs:
@@ -302,3 +302,84 @@ def build_computational_graph(
     return ComputationalGraph(
         list(nodes), list(seen_edges), variable_style,
         function_style, rankdir, remove_variable, show_name)
+
+
+def set_clusters(graph, namedlinks):
+    """Using hierarchy of links, add heuristic groupings of nodes"""
+    
+    g = graph
+
+    e_down = defaultdict(list)
+    e_up = defaultdict(list)
+    for s, t in g.edges:
+        e_down[id(s)].append(id(t))
+        e_up[id(t)].append(id(s))
+
+    descendants = {}
+    def _compute_d(v):
+        # print(v)
+        if v not in descendants:
+            descendants[v] = {v}
+            # print(descendants)
+            for w in e_down[v]:
+                _compute_d(w)
+                # print(descendants)
+                descendants[v] |= descendants[w]
+
+    anscestors = {}
+    def _compute_a(v):
+        if v not in anscestors:
+            anscestors[v] = {v}
+            for w in e_up[v]:
+                _compute_a(w)
+                anscestors[v] |= anscestors[w]
+
+    idvarnodes = {id(n.get_variable()): id(n) for n in g.nodes if isinstance(n, variable.VariableNode)}
+
+    for v_obj in g.nodes:
+        v = id(v_obj)
+        _compute_d(v)
+        _compute_a(v)
+
+    # print(descendants)
+    """
+    for v, ws in descendants.items():
+        print('{}: {}'.format(v, ws))
+
+    """
+
+    # print({id(p) for p in the_link.params()})
+
+    def make_clusters(link, name):
+        # params = list(link.params())
+        # params = list(filter(lambda p: id(p) in descendants, link.params()))
+        id_params = [idvarnodes[id(p)] for p in link.params()]
+                     # if id(p) in idvarnodes]
+        if id_params:
+            # print('ok')
+            # print([descendants[i] for i in id_params])
+            common_descendants = set.intersection(*[descendants[i] for i in id_params])
+            # print('{}: {}'.format(name, common_descendants))
+            lcd = list(filter(
+                lambda v: all(w not in common_descendants for w in e_up[v]),
+                common_descendants))
+            # print('{}: {}'.format(name, lcd))
+            ans = set.union(*[anscestors[low] for low in lcd]).intersection(
+                set.union(*[descendants[high] for high in id_params]))
+            # print('{}: {}'.format(name, ans))
+            for x in ans:
+                assert x in map(id, g.nodes)
+            ans_objs = {v for v in g.nodes if id(v) in ans}
+            # name = '{}/{}'.format(prefix, link.name)
+            return name, ans_objs, [
+                make_clusters(c, '{}/{}'.format(name, c.name))
+                for c in link.children()]
+            # clusters.append((name, {v for v in g.nodes if id(v) in ans}))
+        else:
+            return name, {}, []
+
+    g.clusters = [
+        make_clusters(link, name)
+        for name, link in namedlinks
+    ]
+
