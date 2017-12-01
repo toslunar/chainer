@@ -224,6 +224,47 @@ class TestLSTM1(_TestLSTM, unittest.TestCase):
 
 
 @testing.parameterize(*(testing.product({
+    'batch': [1, 1, 0],
+    'dtype': [numpy.float32],
+}) + testing.product({
+    'batch': [1],
+    'dtype': [numpy.float16, numpy.float32, numpy.float64],
+})))
+@testing.fix_random()
+class TestLSTM3(_TestLSTM, unittest.TestCase):
+
+    def setUp(self):
+        hidden_shape = (1, 3, 1)
+        x_shape = (self.batch, 12, 1)
+        y_shape = (self.batch, 3, 1)
+        self.c_prev = numpy.random.uniform(
+            -1, 1, hidden_shape).astype(self.dtype)
+        self.x = numpy.random.uniform(-1, 1, x_shape).astype(self.dtype)
+
+        self.gc = numpy.random.uniform(-1, 1, hidden_shape).astype(self.dtype)
+        self.gh = numpy.random.uniform(-1, 1, y_shape).astype(self.dtype)
+
+        self.ggc = numpy.random.uniform(-1, 1, hidden_shape).astype(self.dtype)
+        self.ggx = numpy.random.uniform(-1, 1, x_shape).astype(self.dtype)
+
+        self.check_forward_options = {}
+        self.check_backward_options = {}
+        self.check_double_backward_options = {}
+        if self.dtype == numpy.float16:
+            self.check_forward_options = {'atol': 1e-3, 'rtol': 1e-2}
+            self.check_backward_options = {'atol': 5e-3, 'rtol': 5e-2}
+            self.check_double_backward_options = {'atol': 5e-3, 'rtol': 5e-2}
+
+    def _compute_expected_out(self):
+        # Compute expected out
+        a_in = self.x[:, [0, 4, 8]]
+        i_in = self.x[:, [1, 5, 9]]
+        f_in = self.x[:, [2, 6, 10]]
+        o_in = self.x[:, [3, 7, 11]]
+        return a_in, i_in, f_in, o_in
+
+
+@testing.parameterize(*(testing.product({
     'batch': [3, 2, 0],
     'dtype': [numpy.float32],
 }) + testing.product({

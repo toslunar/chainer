@@ -125,6 +125,9 @@ class LSTMGrad(function.Function):
         ga, gi, gf, go = _extract_gates(gx)
 
         # Consider the case that either gradient is not given
+        # print((
+         #    gc is None or gc.shape,
+          #   gh is None or gh.shape))
         if gc is None:
             gc_update = 0
             gc_rest = 0
