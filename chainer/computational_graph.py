@@ -90,6 +90,7 @@ class ComputationalGraph(object):
                  remove_variable=False, show_name=True):
         self.nodes = nodes
         self.edges = edges
+        self.clusters = []
         self.variable_style = variable_style
         self.function_style = function_style
         if rankdir not in ('TB', 'BT', 'LR', 'RL'):
@@ -120,6 +121,14 @@ class ComputationalGraph(object):
                         node, self.variable_style, self.show_name).label
             else:
                 ret += DotNode(node, self.function_style, self.show_name).label
+
+        for i, cluster in enumerate(self.clusters):
+            name, s = cluster
+            ret += 'subgraph cluster%d{' % i
+            ret += 'label="{}";'.format(name)
+            for node in s:
+                ret += '%s;' % id(node)
+            ret += '}'
 
         drawn_edges = []
         for edge in self.edges:
