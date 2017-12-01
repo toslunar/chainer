@@ -122,13 +122,19 @@ class ComputationalGraph(object):
             else:
                 ret += DotNode(node, self.function_style, self.show_name).label
 
-        for i, cluster in enumerate(self.clusters):
-            name, s = cluster
-            ret += 'subgraph cluster%d{' % i
-            ret += 'label="{}";'.format(name)
-            for node in s:
-                ret += '%s;' % id(node)
-            ret += '}'
+        i = 0
+        # def draw_cluster(name, s, children):
+        def draw_clusters(cs):
+            nonlocal i, ret
+            for name, s, children in cs:
+                ret += 'subgraph cluster%d{' % i
+                i += 1
+                ret += 'label="{}";'.format(name)
+                for node in s:
+                    ret += '%s;' % id(node)
+                draw_clusters(children)
+                ret += '}'
+        draw_clusters(self.clusters)
 
         drawn_edges = []
         for edge in self.edges:

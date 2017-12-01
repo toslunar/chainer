@@ -79,8 +79,7 @@ for v, ws in descendants.items():
 
 # print({id(p) for p in the_link.params()})
 
-clusters = []
-for name, link in the_link.namedlinks():
+def make_clusters(link, name):
     # params = list(link.params())
     # params = list(filter(lambda p: id(p) in descendants, link.params()))
     id_params = [idvarnodes[id(p)] for p in link.params()]
@@ -99,9 +98,18 @@ for name, link in the_link.namedlinks():
         # print('{}: {}'.format(name, ans))
         for x in ans:
             assert x in map(id, g.nodes)
-        clusters.append((name, {v for v in g.nodes if id(v) in ans}))
+        ans_objs = {v for v in g.nodes if id(v) in ans}
+        # name = '{}/{}'.format(prefix, link.name)
+        return name, ans_objs, [
+            make_clusters(c, '{}/{}'.format(name, c.name))
+            for c in link.children()]
+        # clusters.append((name, {v for v in g.nodes if id(v) in ans}))
+    else:
+        return name, {}, []
 
-g.clusters = sorted(clusters, key=lambda x: len(x[1]))
+# g.clusters = sorted(clusters, key=lambda x: len(x[1]))
+
+g.clusters = [make_clusters(the_link, '')]
 
 print(g.dump())
 # print(e)
