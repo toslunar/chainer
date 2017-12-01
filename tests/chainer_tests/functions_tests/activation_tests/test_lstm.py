@@ -16,15 +16,7 @@ def _sigmoid(x):
     return numpy.tanh(x * half) * half + half
 
 
-@testing.parameterize(*(testing.product({
-    'batch': [3, 2, 0],
-    'dtype': [numpy.float32],
-}) + testing.product({
-    'batch': [3],
-    'dtype': [numpy.float16, numpy.float32, numpy.float64],
-})))
-@testing.fix_random()
-class TestLSTM(unittest.TestCase):
+class _TestLSTM(object):
 
     def setUp(self):
         hidden_shape = (3, 2, 4)
@@ -54,6 +46,13 @@ class TestLSTM(unittest.TestCase):
         self.gc = self.gc[:, :, 0].copy()
         self.gh = self.gh[:, :, 0].copy()
 
+    def _compute_expected_out(self):
+        a_in = self.x[:, [0, 4]]
+        i_in = self.x[:, [1, 5]]
+        f_in = self.x[:, [2, 6]]
+        o_in = self.x[:, [3, 7]]
+        return a_in, i_in, f_in, o_in
+
     def check_forward(self, c_prev_data, x_data):
         c_prev = chainer.Variable(c_prev_data)
         x = chainer.Variable(x_data)
@@ -63,10 +62,7 @@ class TestLSTM(unittest.TestCase):
         batch = len(x_data)
 
         # Compute expected out
-        a_in = self.x[:, [0, 4]]
-        i_in = self.x[:, [1, 5]]
-        f_in = self.x[:, [2, 6]]
-        o_in = self.x[:, [3, 7]]
+        a_in, i_in, f_in, o_in = self._compute_expected_out()
 
         c_expect = _sigmoid(i_in) * numpy.tanh(a_in) + \
             _sigmoid(f_in) * self.c_prev[:batch]
@@ -172,6 +168,59 @@ class TestLSTM(unittest.TestCase):
             cuda.to_gpu(self.c_prev), cuda.to_gpu(self.x),
             cuda.to_gpu(self.gc), cuda.to_gpu(self.gh),
             cuda.to_gpu(self.ggc), cuda.to_gpu(self.ggx))
+
+
+@testing.parameterize(*(testing.product({
+    'batch': [3, 2, 0],
+    'dtype': [numpy.float32],
+}) + testing.product({
+    'batch': [3],
+    'dtype': [numpy.float16, numpy.float32, numpy.float64],
+})))
+@testing.fix_random()
+class TestLSTM(_TestLSTM, unittest.TestCase):
+    pass
+
+
+@testing.parameterize(*(testing.product({
+    'batch': [1, 1, 0],
+    'dtype': [numpy.float32],
+}) + testing.product({
+    'batch': [1],
+    'dtype': [numpy.float16, numpy.float32, numpy.float64],
+})))
+@testing.fix_random()
+class TestLSTM1(_TestLSTM, unittest.TestCase):
+
+    def setUp(self):
+        hidden_shape = (1, 1, 1)
+        x_shape = (self.batch, 4, 1)
+        y_shape = (self.batch, 1, 1)
+        self.c_prev = numpy.random.uniform(
+            -1, 1, hidden_shape).astype(self.dtype)
+        self.x = numpy.random.uniform(-1, 1, x_shape).astype(self.dtype)
+
+        self.gc = numpy.random.uniform(-1, 1, hidden_shape).astype(self.dtype)
+        self.gh = numpy.random.uniform(-1, 1, y_shape).astype(self.dtype)
+
+        self.ggc = numpy.random.uniform(-1, 1, hidden_shape).astype(self.dtype)
+        self.ggx = numpy.random.uniform(-1, 1, x_shape).astype(self.dtype)
+
+        self.check_forward_options = {}
+        self.check_backward_options = {}
+        self.check_double_backward_options = {}
+        if self.dtype == numpy.float16:
+            self.check_forward_options = {'atol': 1e-3, 'rtol': 1e-2}
+            self.check_backward_options = {'atol': 5e-3, 'rtol': 5e-2}
+            self.check_double_backward_options = {'atol': 5e-3, 'rtol': 5e-2}
+
+    def _compute_expected_out(self):
+        # Compute expected out
+        a_in = self.x[:, [0]]
+        i_in = self.x[:, [1]]
+        f_in = self.x[:, [2]]
+        o_in = self.x[:, [3]]
+        return a_in, i_in, f_in, o_in
 
 
 @testing.parameterize(*(testing.product({
