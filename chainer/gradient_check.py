@@ -610,6 +610,7 @@ def check_double_backward(func, x_data, y_grad, x_grad_grad, params=(),
 
         y = _as_tuple(func(*xs))
 
+        """
         # Let all elements of y share the same creator.
         # See the comment in check_backward.
         y = identity.Identity().apply(y)
@@ -618,10 +619,9 @@ def check_double_backward(func, x_data, y_grad, x_grad_grad, params=(),
 
         y[0].backward(enable_double_backprop=True)
         """
-        z = _GradientSetter(gys)(*y)
+        z, = _GradientSetter(gys).apply(y)
 
         z.backward(enable_double_backprop=True)
-        """
 
         return tuple([x.grad_var for x in xs] + [p.grad_var for p in params])
 
