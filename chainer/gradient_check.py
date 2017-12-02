@@ -441,8 +441,7 @@ def check_backward(
     y0_data = [_.data for _ in y]
 
     y_grad = _check_y_grad(y, y_grad)
-    import copy
-    y = _GradientSetter(copy.deepcopy(y_grad))(*y)
+    y = _GradientSetter(y_grad)(*y)
 
     """
     # All creators of `y` need to be the same because we only call
@@ -649,9 +648,10 @@ def check_double_backward(func, x_data, y_grad, x_grad_grad, params=(),
 
 class _GradientSetter(chainer.Function):
     def __init__(self, grad):
-        self.grad = grad
+        self.grad = tuple(None if g is None else g.copy() for g in grad)
 
     def forward(self, inputs):
+        """
         if self.grad is not None:
             if len(inputs) != len(self.grad):
                 raise ValueError(
@@ -665,6 +665,7 @@ class _GradientSetter(chainer.Function):
                     'if the upstream gradient is `None`.\n'
                     'Actual: {} != 1'.format(len(y)))
             self.grad = (1,)
+        """
 
         # output a 0-sized 1-dim array like inputs
         return inputs[0].flatten()[:0],
