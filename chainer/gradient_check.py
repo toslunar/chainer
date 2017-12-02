@@ -441,7 +441,8 @@ def check_backward(
     y0_data = [_.data for _ in y]
 
     y_grad = _check_y_grad(y, y_grad)
-    y = _GradientSetter(y_grad)(*y)
+    import copy
+    y = _GradientSetter(copy.deepcopy(y_grad))(*y)
 
     """
     # All creators of `y` need to be the same because we only call
