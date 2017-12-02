@@ -6,7 +6,7 @@ import six
 
 from chainer import configuration
 from chainer import cuda
-from chainer.functions.math import identity
+from chainer import FunctionNode
 from chainer import testing
 from chainer import variable
 
@@ -640,14 +640,14 @@ def check_double_backward(func, x_data, y_grad, x_grad_grad, params=(),
         raise AssertionError(f.getvalue())
 
 
-class _GradientSetter(chainer.function_node.FunctionNode):
+class _GradientSetter(FunctionNode):
     def __init__(self, grad):
         self.grad = grad
 
     def forward(self, inputs):
         if self.grad is None:
             y0, = inputs
-            xp = chainer.cuda.get_array_module(y0)
+            xp = cuda.get_array_module(y0)
             gy0 = xp.ones_like(inputs[0])
             assert gy0.size == 1
 
@@ -659,7 +659,7 @@ class _GradientSetter(chainer.function_node.FunctionNode):
     def backward(self, inputs, grad_outputs):
         grad = self.grad
 
-        return tuple(None if g is None else chainer.as_variable(g) for g in grad)
+        return tuple(None if g is None else variable.as_variable(g) for g in grad)
 
 
 def _set_y_grad(y, y_grad):
