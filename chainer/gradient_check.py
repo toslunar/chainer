@@ -614,7 +614,13 @@ def check_double_backward(func, x_data, y_grad, x_grad_grad, params=(),
         y = identity.Identity().apply(y)
 
         _set_y_grad(y, gys)
+
         y[0].backward(enable_double_backprop=True)
+        """
+        z = _GradientSetter(gys)(*y)
+
+        z.backward(enable_double_backprop=True)
+        """
 
         return tuple([x.grad_var for x in xs] + [p.grad_var for p in params])
 
@@ -661,7 +667,7 @@ class _GradientSetter(chainer.Function):
             assert g.size == 1
             g[...] = 1
             return (g,)
-        return tuple(None if g is None else g.copy() for g in grad)
+        return grad # tuple(None if g is None else g.copy() for g in grad)
 
 
 def _set_y_grad(y, y_grad):
