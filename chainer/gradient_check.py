@@ -658,17 +658,20 @@ class _GradientSetter(chainer.function_node.FunctionNode):
         self.grad = grad
 
     def forward(self, inputs):
+        if self.grad is None:
+            # g = chainer.utils.force_array(inputs[0]).copy()
+            g = inputs[0].copy()
+            assert g.size == 1
+            g[...] = 1
+            self.grad = (g,)
+
         # output a 0-sized 1-dim array like inputs
         return inputs[0].flatten()[:0],
 
     def backward(self, inputs, grad_outputs):
         grad = self.grad
-        if grad is None:
-            g = inputs[0].copy()
-            assert g.size == 1
-            g[...] = 1
-            return (g,)
-        return grad # tuple(None if g is None else g.copy() for g in grad)
+
+        return tuple(None if g is None else chainer.as_variable(g) for g in grad)
 
 
 def _set_y_grad(y, y_grad):
