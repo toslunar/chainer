@@ -659,11 +659,12 @@ class _GradientSetter(chainer.function_node.FunctionNode):
 
     def forward(self, inputs):
         if self.grad is None:
-            # g = chainer.utils.force_array(inputs[0]).copy()
-            g = inputs[0].copy()
-            assert g.size == 1
-            g[...] = 1
-            self.grad = (g,)
+            y0, = inputs
+            xp = chainer.cuda.get_array_module(y0)
+            gy0 = xp.ones_like(inputs[0])
+            assert gy0.size == 1
+
+            self.grad = (gy0,)
 
         # output a 0-sized 1-dim array like inputs
         return inputs[0].flatten()[:0],
