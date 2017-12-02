@@ -440,7 +440,7 @@ def check_backward(
     y = _as_tuple(y)
     y0_data = [_.data for _ in y]
 
-    z = _GradientSetter(y_grad)(*y)
+    z, = _GradientSetter(y_grad).apply(y)
     y_grad = _check_y_grad(y, y_grad)
 
     """
@@ -609,6 +609,7 @@ def check_double_backward(func, x_data, y_grad, x_grad_grad, params=(),
         gys = inputs[n_x:]
 
         y = _as_tuple(func(*xs))
+
         # Let all elements of y share the same creator.
         # See the comment in check_backward.
         y = identity.Identity().apply(y)
@@ -652,7 +653,7 @@ def check_double_backward(func, x_data, y_grad, x_grad_grad, params=(),
         raise AssertionError(f.getvalue())
 
 
-class _GradientSetter(chainer.Function):
+class _GradientSetter(chainer.function_node.FunctionNode):
     def __init__(self, grad):
         self.grad = grad
 
