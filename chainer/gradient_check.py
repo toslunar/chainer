@@ -440,17 +440,11 @@ def check_backward(
     y = _as_tuple(y)
     y0_data = [_.data for _ in y]
 
-    """
-    z, = _GradientSetter(y_grad).apply(y)
-    y_grad = _check_y_grad(y, y_grad)
-
     # All creators of `y` need to be the same because we only call
     # `y[0].backward` to call `backward` method of the creator.
-    # To do so we need to insert a dummy function `Ident` to the
+    # To do so we need to insert a dummy function *FIXME* to the
     # computational graph.
     # Note that `func` may not be a `Function` object.
-    y = identity.Identity().apply(y)
-    """
 
     y, y_grad = _set_y_grad(y, y_grad)
 
@@ -685,23 +679,6 @@ def _set_y_grad(y, y_grad):
         y, = _GradientSetter(None).apply(y)
         y_grad = (1,)
     return y, y_grad
-
-
-def _check_y_grad(y, y_grad):
-    if y_grad is not None:
-        if len(y) != len(y_grad):
-            raise ValueError(
-                'Upstream gradients must contain equally many elements as '
-                'number of output elements.\n'
-                'Actual: {} != {}'.format(len(y), len(y_grad)))
-    else:
-        if len(y) != 1:
-            raise ValueError(
-                'Function must return a zero-dimensional array of length 1 '
-                'if the upstream gradient is `None`.\n'
-                'Actual: {} != 1'.format(len(y)))
-        y_grad = (1,)
-    return y_grad
 
 
 def _clear_grads(xs):
