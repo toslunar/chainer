@@ -10,6 +10,7 @@ from chainer.functions.math import identity
 from chainer import testing
 from chainer import variable
 
+import chainer #tmp
 
 class NondifferentiableError(Exception):
     pass
@@ -439,6 +440,10 @@ def check_backward(
     y = _as_tuple(y)
     y0_data = [_.data for _ in y]
 
+    y_grad = _check_y_grad(y, y_grad)
+    y = _GradientSetter(y_grad)(*y)
+
+    """
     # All creators of `y` need to be the same because we only call
     # `y[0].backward` to call `backward` method of the creator.
     # To do so we need to insert a dummy function `Ident` to the
@@ -447,6 +452,7 @@ def check_backward(
     y = identity.Identity().apply(y)
 
     y_grad = _set_y_grad(y, y_grad)
+    """
 
     # Clear gradients which may exist if func calls backward inside of itself.
     _clear_grads(xs)
@@ -454,7 +460,7 @@ def check_backward(
 
     # We only need to call `backward` for one result `Variable`.
     # `Variable.backward` method calls `Function.backward` of its creator.
-    y[0].backward()
+    y.backward()
 
     if no_grads is None:
         no_grads = [x.dtype.kind != 'f' for x in xs]
@@ -640,6 +646,32 @@ def check_double_backward(func, x_data, y_grad, x_grad_grad, params=(),
         raise AssertionError(f.getvalue())
 
 
+class _GradientSetter(chainer.Function):
+    def __init__(self, grad):
+        self.grad = grad
+
+    def forward(self, inputs):
+        if self.grad is not None:
+            if len(inputs) != len(self.grad):
+                raise ValueError(
+                    'Upstream gradients must contain equally many elements as '
+                    'number of output elements.\n'
+                    'Actual: {} != {}'.format(len(inputs), len(self.grad)))
+        else:
+            if len(inputs) != 1:
+                raise ValueError(
+                    'Function must return a zero-dimensional array of length 1 '
+                    'if the upstream gradient is `None`.\n'
+                    'Actual: {} != 1'.format(len(y)))
+            self.grad = (1,)
+
+        # output a 0-sized 1-dim array like inputs
+        return inputs[0].flatten()[:0],
+
+    def backward(self, inputs, grad_outputs):
+        return self.grad
+
+
 def _set_y_grad(y, y_grad):
     if y_grad is not None:
         if len(y) != len(y_grad):
@@ -659,6 +691,26 @@ def _set_y_grad(y, y_grad):
                 'if the upstream gradient is `None`.\n'
                 'Actual: {} != 1'.format(len(y)))
         y_grad = (1,)
+    return y_grad
+
+
+def _check_y_grad(y, y_grad):
+    if y_grad is not None:
+        if len(y) != len(y_grad):
+            raise ValueError(
+                'Upstream gradients must contain equally many elements as '
+                'number of output elements.\n'
+                'Actual: {} != {}'.format(len(y), len(y_grad)))
+    else:
+        if len(y) != 1:
+            raise ValueError(
+                'Function must return a zero-dimensional array of length 1 '
+                'if the upstream gradient is `None`.\n'
+                'Actual: {} != 1'.format(len(y)))
+        # y_grad = (1,)
+        import numpy
+        y_grad = (numpy.ones_like(y[0].data),)
+        # print(y_grad)
     return y_grad
 
 
