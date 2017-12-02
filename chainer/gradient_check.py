@@ -10,7 +10,6 @@ from chainer import FunctionNode
 from chainer import testing
 from chainer import variable
 
-import chainer #tmp
 
 class NondifferentiableError(Exception):
     pass
@@ -442,7 +441,7 @@ def check_backward(
 
     # All creators of `y` need to be the same because we only call
     # `y[0].backward` to call `backward` method of the creator.
-    # To do so we need to insert a dummy function *FIXME* to the
+    # To do so we need to insert a dummy function `_GradientSetter` to the
     # computational graph.
     # Note that `func` may not be a `Function` object.
 
@@ -659,7 +658,9 @@ class _GradientSetter(FunctionNode):
     def backward(self, inputs, grad_outputs):
         grad = self.grad
 
-        return tuple(None if g is None else variable.as_variable(g) for g in grad)
+        return tuple(
+            None if g is None else variable.as_variable(g)
+            for g in grad)
 
 
 def _set_y_grad(y, y_grad):
