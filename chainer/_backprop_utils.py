@@ -26,7 +26,7 @@ def concat_variable(gx, g_input):
         sum_gx += g_input,
 
     if len(sum_gx) == 0:
-        sum_gx = None,
+        sum_gx = None
 
     return sum_gx
 

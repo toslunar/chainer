@@ -560,14 +560,15 @@ Use apply() method instead.\
             for i, (gx, g_input) in enumerate(six.moves.zip(gxs, grad_inputs)):
                 sum_gx = _backprop_utils.concat_variable(gx, g_input)
                 j = target_input_indexes[i]
-                if self.inputs[j].creator is None:
-                    if sum_gx[0] is not None and len(sum_gx) > 1:
-                        sum_gx = chainer.functions.add(*sum_gx),
-                if len(sum_gx) > 1:
-                    gxs_output += sum_gx,
+                if sum_gx is None:
+                    gxs_output += None,
                 else:
-                    gxs_output += sum_gx
-
+                    if self.inputs[j].creator is None:
+                        if len(sum_gx) > 1:
+                            sum_gx = chainer.functions.add(*sum_gx)
+                        else:
+                            sum_gx, = sum_gx
+                    gxs_output += sum_gx,
             return gxs_output
         else:
             return tuple([gx if g_input is None else
