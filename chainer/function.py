@@ -139,24 +139,27 @@ class FunctionAdapter(function_node.FunctionNode):
         grad_out_data = tuple([None if grad is None else grad.data
                                for grad in grad_outputs])
 
-        with cuda.get_device_from_array(*(in_data + grad_out_data)):
-            gxs = self._function.backward(in_data, grad_out_data)
-        for x, gx in six.moves.zip(self.inputs, gxs):
-            variable._check_grad_type(self, x, gx)
+        def bwd_func(inputs, n=len(in_data)):
+            return tuple(self._function.backward(inputs[:n], inputs[n:]))
 
-        ret = []
-        for i in target_input_indexes:
-            if gxs[i] is None:
-                g = None
-            else:
-                # Intentionally not passing requires_grad=False so that
-                # backprop routines can raise an error when a further backprop
-                # is attempted against this gradient variable.
-                g = variable.Variable(gxs[i])
-                g.node._old_style_grad_generator = self._function.label
-            ret.append(g)
+        return _UnbackwardableAdapter(
+            bwd_func,
+            'an old style Function "%s"' % self._function.label).apply(
+                in_data + grad_out_data)
 
-        return tuple(ret)
+
+class _UnbackwardableAdapter(function_node.FunctionNode):
+
+    def __init__(self, func, name):
+        self.func = func
+        self.name = name
+
+    def forward(self, inputs):
+        return self.func(inputs)
+
+    def backward(self, target_input_indices, grad_outputs):
+        raise RuntimeError(
+            'cannot differentiate {}'.format(self.name))
 
 
 class Function(object):

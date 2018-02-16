@@ -396,13 +396,6 @@ class VariableNode(object):
         if self._data is not None:
             self._data = d
 
-    def _check_old_style_gradient(self):
-        if self._old_style_grad_generator is not None:
-            raise RuntimeError(
-                'cannot twice-differentiate an old style Function "%s"' %
-                self._old_style_grad_generator)
-
-
 def _create_variable(data, name, grad, requires_grad):
     return Variable(
         data, name=name, grad=grad, requires_grad=requires_grad)
@@ -935,7 +928,6 @@ Actual: {0}'''.format(type(data))
             self._backward_main(retain_grad, loss_scale)
 
     def _backward_main(self, retain_grad, loss_scale):
-        self._node._check_old_style_gradient()
         if self.creator_node is None:
             return
         initial_device = None
@@ -1027,7 +1019,6 @@ Actual: {0}'''.format(type(data))
                 elif x in grads:
                     gx = grads[x]
                 elif x.creator_node is None:
-                    x._check_old_style_gradient()
                     # accumulate the gradient only if the node is a leaf
                     gx = x.grad_var
                 else:
