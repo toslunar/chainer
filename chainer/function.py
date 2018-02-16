@@ -144,22 +144,23 @@ class FunctionAdapter(function_node.FunctionNode):
 
         return _UnbackwardableAdapter(
             bwd_func,
-            'an old style Function "%s"' % self._function.label).apply(
-                in_data + grad_out_data)
+            RuntimeError(
+                'cannot twice-differentiate an old style Function "%s"' %
+                self._function.label),
+        ).apply(in_data + grad_out_data)
 
 
 class _UnbackwardableAdapter(function_node.FunctionNode):
 
-    def __init__(self, func, name):
-        self.func = func
-        self.name = name
+    def __init__(self, forward_func, backward_err):
+        self._forward_func = forward_func
+        self._backward_err = backward_err
 
     def forward(self, inputs):
-        return self.func(inputs)
+        return self._forward_func(inputs)
 
     def backward(self, target_input_indices, grad_outputs):
-        raise RuntimeError(
-            'cannot differentiate {}'.format(self.name))
+        raise self._backward_err
 
 
 class Function(object):
