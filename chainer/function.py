@@ -135,8 +135,10 @@ class FunctionAdapter(function_node.FunctionNode):
         return self._function.forward(inputs)
 
     def backward(self, target_input_indexes, grad_outputs):
-        # Get all inputs including unretained variables
-        inputs = tuple(x.data for x in self.inputs)
+        # Get all inputs including unretained variables.
+        # get_variable_or_none cannot be used since data may be retained
+        # even if the variable is released
+        inputs = tuple(x.get_variable() for x in self.inputs)
 
         n = len(inputs)
         def bwd_func(all_inputs):
