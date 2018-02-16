@@ -135,11 +135,9 @@ class FunctionAdapter(function_node.FunctionNode):
         return self._function.forward(inputs)
 
     def backward(self, target_input_indexes, grad_outputs):
-        in_data = tuple([input.data for input in self.inputs])
-        grad_out_data = tuple([None if grad is None else grad.data
-                               for grad in grad_outputs])
+        retained_inputs = self.get_retained_inputs()
 
-        def bwd_func(inputs, n=len(in_data)):
+        def bwd_func(inputs, n=len(retained_inputs)):
             return tuple(self._function.backward(inputs[:n], inputs[n:]))
 
         return _UnbackwardableAdapter(
@@ -147,7 +145,7 @@ class FunctionAdapter(function_node.FunctionNode):
             RuntimeError(
                 'cannot twice-differentiate an old style Function "%s"' %
                 self._function.label),
-        ).apply(in_data + grad_out_data)
+        ).apply(retained_inputs + grad_outputs)
 
 
 class _UnbackwardableAdapter(function_node.FunctionNode):
