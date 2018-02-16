@@ -138,18 +138,25 @@ class FunctionAdapter(function_node.FunctionNode):
         # Get all inputs including unretained variables.
         # get_variable_or_none cannot be used since data may be retained
         # even if the variable is released
-        inputs = tuple(x.data for x in self.inputs)
+        var_inputs = tuple(node.get_variable_or_none() for node in self.inputs)
+        inputs = tuple(
+            (node.data if var is None else var)
+            for node, var in zip(self.inputs, var_inputs))
 
         n = len(inputs)
+        m = n + len(grad_outputs)
         def bwd_func(all_inputs):
-            return tuple(self._function.backward(all_inputs[:n], all_inputs[n:]))
+            return tuple(self._function.backward(all_inputs[:n], all_inputs[n:m]))
+
+        # retained_outputs = tuple(self.get_retained_outputs())
+        retained_outputs = ()  # tmp
 
         return _UnbackwardableAdapter(
             bwd_func,
             RuntimeError(
                 'cannot twice-differentiate an old style Function "%s"' %
                 self._function.label),
-        ).apply(inputs + grad_outputs)
+        ).apply(inputs + grad_outputs + retained_outputs)
 
 
 class _UnbackwardableAdapter(function_node.FunctionNode):
