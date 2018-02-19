@@ -48,7 +48,7 @@ def main():
         model.to_gpu()  # Copy the model to the GPU
 
     # Setup an optimizer
-    optimizer = chainer.optimizers.Adam()
+    optimizer = chainer.optimizers.Adam(amsgrad=True)
     optimizer.setup(model)
 
     # Load the MNIST dataset
@@ -70,6 +70,13 @@ def main():
         x = chainer.Variable(x_array)
         t = chainer.Variable(t_array)
         optimizer.update(model, x, t)
+        def chk(x):
+            return (x == 0).all()
+        print(
+            chk(optimizer.target.predictor.l1.W.update_rule.state['m']),
+            chk(optimizer.target.predictor.l1.W.update_rule.state['v']),
+            chk(optimizer.target.predictor.l1.W.update_rule.state['vhat']),
+        )
         sum_loss += float(model.loss.data) * len(t.data)
         sum_accuracy += float(model.accuracy.data) * len(t.data)
 
