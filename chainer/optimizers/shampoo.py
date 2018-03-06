@@ -7,7 +7,7 @@ from chainer import optimizer
 _default_hyperparam = optimizer.Hyperparameter()
 _default_hyperparam.lr = 1.0  # [0.01, 10.0] in \S6.1, 1.0 in \S6.2
 _default_hyperparam.alpha = 0.9
-_default_hyperparam.eps = 1e-8  # ?
+_default_hyperparam.eps = 1.0  # ?
 
 
 def _fractional_matrix_power(A, t):
