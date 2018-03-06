@@ -63,8 +63,12 @@ class ShampooRule(optimizer.UpdateRule):
 
         xp = cuda.get_array_module(param.data)
 
+        p = param.data
+        print((xp.sqrt(xp.mean(xp.sum(p ** 2, axis=-1))), p.shape))
+
         lr = self.hyperparam.lr
         alpha = self.hyperparam.alpha
+        pow_update = self.state['pow_update'] <= 0
 
         k = param.ndim
         preconditioned_grad = g
@@ -76,14 +80,14 @@ class ShampooRule(optimizer.UpdateRule):
             h_i = self.state['h%d'%i]
             h_i += xp.tensordot(
                 g, g, axes=(axis, axis))
-            if self.state['pow_update'] <= 0:
+            if pow_update:
                 self.state['pow_h%d'%i] = _fractional_matrix_power(
                     h_i, -0.5 / k)
 
             preconditioned_grad = xp.rollaxis(preconditioned_grad, 0, k).dot(
                 self.state['pow_h%d'%i])
 
-        if self.state['pow_update'] <= 0:
+        if pow_update:
             self.state['pow_update'] = 20  # TODO(kataoka): hyperparam
 
         self.state['pow_update'] -= 1
