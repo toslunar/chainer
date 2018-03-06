@@ -50,16 +50,14 @@ class ShampooRule(optimizer.UpdateRule):
         eps = self.hyperparam.eps
         self.state['pow_update'] = 0
         with cuda.get_device_from_array(param.data):
-            self.state['g'] = xp.zeros_like(param.data)
+            self.state['v'] = xp.zeros_like(param.data)
             for i, n in enumerate(param.shape):
                 self.state['h%d'%i] = eps * xp.eye(n, dtype=param.dtype)
 
     def update_core(self, param):
-        if param.grad is None:
+        g = param.grad
+        if g is None:
             return
-
-        g = self.state['g']
-        g += (1 - self.hyperparam.alpha) * (param.grad - g)
 
         xp = cuda.get_array_module(param.data)
 
@@ -68,7 +66,7 @@ class ShampooRule(optimizer.UpdateRule):
 
         lr = self.hyperparam.lr
         alpha = self.hyperparam.alpha
-        pow_update = self.state['pow_update'] <= 0
+        pow_update = self.state['pow_update'] <= 0  # or self.t < 100
 
         k = param.ndim
         preconditioned_grad = g
@@ -92,7 +90,9 @@ class ShampooRule(optimizer.UpdateRule):
 
         self.state['pow_update'] -= 1
 
-        param.data -= self.hyperparam.lr * preconditioned_grad
+        v = self.state['v']
+        v += (1 - self.hyperparam.alpha) * (preconditioned_grad - v)
+        param.data -= self.hyperparam.lr * v
 
 
 class Shampoo(optimizer.GradientMethod):
