@@ -6,6 +6,7 @@ from chainer.optimizers import nesterov_ag  # NOQA
 from chainer.optimizers import rmsprop  # NOQA
 from chainer.optimizers import rmsprop_graves  # NOQA
 from chainer.optimizers import sgd  # NOQA
+from chainer.optimizers import shampoo  # NOQA
 from chainer.optimizers import smorms3  # NOQA
 
 
@@ -18,4 +19,5 @@ from chainer.optimizers.nesterov_ag import NesterovAG  # NOQA
 from chainer.optimizers.rmsprop import RMSprop  # NOQA
 from chainer.optimizers.rmsprop_graves import RMSpropGraves  # NOQA
 from chainer.optimizers.sgd import SGD  # NOQA
+from chainer.optimizers.shampoo import Shampoo  # NOQA
 from chainer.optimizers.smorms3 import SMORMS3  # NOQA

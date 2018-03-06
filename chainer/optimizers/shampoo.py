@@ -10,6 +10,15 @@ _default_hyperparam.alpha = 0.9
 _default_hyperparam.eps = 1e-8  # ?
 
 
+def _fractional_matrix_power(A, t):
+    """Compute the fractional power of a matrix."""
+
+    xp = cuda.get_array_module(A)
+    u, s, v = xp.linalg.svd(A)
+
+    return xp.dot(u * (s ** t), v)
+
+
 class ShampooRule(optimizer.UpdateRule):
 
     """Update rule of Shampoo.
@@ -42,14 +51,17 @@ class ShampooRule(optimizer.UpdateRule):
         # k = param.ndim
         self.state['pow_update'] = 0
         with cuda.get_device_from_array(param.data):
+            self.state['g'] = xp.zeros_like(param.data)
             for i, n in enumerate(param.shape):
             self.state['h%d'%i] = eps * xp.eye(n, dtype=param.dtype)
             # self.state['pow_h%d'%i] = (eps ** -(1 / 2 * k)) * xp.eye(n, dtype=param.dtype)
 
     def update_core(self, param):
-        grad = param.grad
-        if grad is None:
+        if param.grad is None:
             return
+
+        g = self.state['g']
+        g += (1 - self.hyperparam.alpha) * (param.grad - g)
 
         xp = cuda.get_array_module(param.data)
 
@@ -57,11 +69,11 @@ class ShampooRule(optimizer.UpdateRule):
         alpha = self.hyperparam.alpha
 
         k = param.ndim
-        preconditioned_grad = grad
+        preconditioned_grad = g
         for i in range(k):
             axis = tuple(j for j in range(k) if j != i)
             self.state['h%d'%i] += xp.tensordot(
-                grad, grad, axes=(axis, axis))
+                g, g, axes=(axis, axis))
             if self.state['pow_update'] <= 0:
                 self.state['pow_h%d'%i] += _fractional_matrix_power(
                     self.state['h%d'%i], -0.5 / k)
@@ -71,30 +83,6 @@ class ShampooRule(optimizer.UpdateRule):
                 axes=((i,), (0,)))
 
         param.data -= self.hyperparam.lr * preconditioned_grad
-
-    def update_core_cpu(self, param):
-        grad = param.grad
-        if grad is None:
-            return
-
-        lr = self.hyperparam.lr
-        eps = self.hyperparam.eps
-        h = self.state['h']
-
-        h += grad * grad
-        param.data -= lr * grad / (numpy.sqrt(h) + eps)
-
-    def update_core_gpu(self, param):
-        grad = param.grad
-        if grad is None:
-            return
-        cuda.elementwise(
-            'T grad, T lr, T eps',
-            'T param, T h',
-            '''h += grad * grad;
-               param -= lr * grad / (sqrt(h) + eps);''',
-            'adagrad')(grad, self.hyperparam.lr, self.hyperparam.eps,
-                       param.data, self.state['h'])
 
 
 class Shampoo(optimizer.GradientMethod):
