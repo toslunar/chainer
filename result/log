@@ -1,0 +1,65 @@
+[
+    {
+        "main/loss": 0.19583590164470177,
+        "main/accuracy": 0.9409833370770018,
+        "validation/main/loss": 0.08229971234395635,
+        "validation/main/accuracy": 0.9747000068426133,
+        "epoch": 1,
+        "iteration": 600,
+        "elapsed_time": 241.32661407499108
+    },
+    {
+        "main/loss": 0.05537033686957633,
+        "main/accuracy": 0.9824333434303602,
+        "validation/main/loss": 0.06285053033643635,
+        "validation/main/accuracy": 0.9816000074148178,
+        "epoch": 2,
+        "iteration": 1200,
+        "elapsed_time": 446.1328871739679
+    },
+    {
+        "main/loss": 0.02588207345106639,
+        "main/accuracy": 0.9928000057737033,
+        "validation/main/loss": 0.05707698145517497,
+        "validation/main/accuracy": 0.9821000063419342,
+        "epoch": 3,
+        "iteration": 1800,
+        "elapsed_time": 649.2598367639584
+    },
+    {
+        "main/loss": 0.01178856254904531,
+        "main/accuracy": 0.9974000024795532,
+        "validation/main/loss": 0.054983441621934616,
+        "validation/main/accuracy": 0.9843000048398971,
+        "epoch": 4,
+        "iteration": 2400,
+        "elapsed_time": 858.9049694279674
+    },
+    {
+        "main/loss": 0.005504628817482929,
+        "main/accuracy": 0.9992166674137115,
+        "validation/main/loss": 0.05355592341256852,
+        "validation/main/accuracy": 0.984400007724762,
+        "epoch": 5,
+        "iteration": 3000,
+        "elapsed_time": 1066.8053214809624
+    },
+    {
+        "main/loss": 0.002558036118474168,
+        "main/accuracy": 0.9998666667938232,
+        "validation/main/loss": 0.054445588435910394,
+        "validation/main/accuracy": 0.9845000064373016,
+        "epoch": 6,
+        "iteration": 3600,
+        "elapsed_time": 1265.1050825850107
+    },
+    {
+        "main/loss": 0.0015485643181940153,
+        "main/accuracy": 0.9999333333969116,
+        "validation/main/loss": 0.054681056715934345,
+        "validation/main/accuracy": 0.9849000072479248,
+        "epoch": 7,
+        "iteration": 4200,
+        "elapsed_time": 1477.0734516319935
+    }
+]
