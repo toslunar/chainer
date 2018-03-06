@@ -82,6 +82,11 @@ class ShampooRule(optimizer.UpdateRule):
             preconditioned_grad = xp.rollaxis(preconditioned_grad, 0, k).dot(
                 self.state['pow_h%d'%i])
 
+        if self.state['pow_update'] <= 0:
+            self.state['pow_update'] = 20  # TODO(kataoka): hyperparam
+
+        self.state['pow_update'] -= 1
+
         param.data -= self.hyperparam.lr * preconditioned_grad
 
 
