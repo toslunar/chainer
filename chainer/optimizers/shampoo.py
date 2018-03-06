@@ -48,13 +48,11 @@ class ShampooRule(optimizer.UpdateRule):
     def init_state(self, param):
         xp = cuda.get_array_module(param.data)
         eps = self.hyperparam.eps
-        # k = param.ndim
         self.state['pow_update'] = 0
         with cuda.get_device_from_array(param.data):
             self.state['g'] = xp.zeros_like(param.data)
             for i, n in enumerate(param.shape):
-            self.state['h%d'%i] = eps * xp.eye(n, dtype=param.dtype)
-            # self.state['pow_h%d'%i] = (eps ** -(1 / 2 * k)) * xp.eye(n, dtype=param.dtype)
+                self.state['h%d'%i] = eps * xp.eye(n, dtype=param.dtype)
 
     def update_core(self, param):
         if param.grad is None:
@@ -71,16 +69,18 @@ class ShampooRule(optimizer.UpdateRule):
         k = param.ndim
         preconditioned_grad = g
         for i in range(k):
+            for j in range(k):
+                assert preconditioned_grad.shape[j] == g.shape[(i + j) % k]
+
             axis = tuple(j for j in range(k) if j != i)
             self.state['h%d'%i] += xp.tensordot(
                 g, g, axes=(axis, axis))
             if self.state['pow_update'] <= 0:
-                self.state['pow_h%d'%i] += _fractional_matrix_power(
+                self.state['pow_h%d'%i] = _fractional_matrix_power(
                     self.state['h%d'%i], -0.5 / k)
 
-            preconditioned_grad = xp.tensordot(
-                preconditioned_grad, self.state['pow_h%d'%i],
-                axes=((i,), (0,)))
+            preconditioned_grad = xp.rollaxis(preconditioned_grad, 0, k).dot(
+                self.state['pow_h%d'%i])
 
         param.data -= self.hyperparam.lr * preconditioned_grad
 
