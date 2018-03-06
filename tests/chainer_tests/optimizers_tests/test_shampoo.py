@@ -15,7 +15,7 @@ class TestFractionalMatrixPower(unittest.TestCase):
         a = x
         a = a.dot(a)
         a = a.dot(a)
-        t = 0.25
+        t = -0.25
         numpy.testing.assert_allclose(
             shampoo._fractional_matrix_power(a, t),
             scipy.linalg.fractional_matrix_power(a, t))

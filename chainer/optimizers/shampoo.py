@@ -73,11 +73,12 @@ class ShampooRule(optimizer.UpdateRule):
                 assert preconditioned_grad.shape[j] == g.shape[(i + j) % k]
 
             axis = tuple(j for j in range(k) if j != i)
-            self.state['h%d'%i] += xp.tensordot(
+            h_i = self.state['h%d'%i]
+            h_i += xp.tensordot(
                 g, g, axes=(axis, axis))
             if self.state['pow_update'] <= 0:
                 self.state['pow_h%d'%i] = _fractional_matrix_power(
-                    self.state['h%d'%i], -0.5 / k)
+                    h_i, -0.5 / k)
 
             preconditioned_grad = xp.rollaxis(preconditioned_grad, 0, k).dot(
                 self.state['pow_h%d'%i])
