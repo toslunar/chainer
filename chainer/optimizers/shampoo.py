@@ -61,9 +61,6 @@ class ShampooRule(optimizer.UpdateRule):
 
         xp = cuda.get_array_module(param.data)
 
-        p = param.data
-        print((xp.sqrt(xp.mean(xp.sum(p ** 2, axis=-1))), p.shape))
-
         lr = self.hyperparam.lr
         alpha = self.hyperparam.alpha
         pow_update = self.state['pow_update'] <= 0  # or self.t < 100
