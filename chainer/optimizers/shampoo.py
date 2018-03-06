@@ -96,7 +96,7 @@ class Shampoo(optimizer.GradientMethod):
 
     """Shampoo optimizer.
 
-    See: http://jmlr.org/papers/v12/duchi11a.html
+    See: https://arxiv.org/abs/1802.09568
 
     Args:
         lr (float): Learning rate.
