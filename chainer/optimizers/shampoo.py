@@ -80,8 +80,10 @@ class ShampooRule(optimizer.UpdateRule):
                     self.state['pow_h%d' % i] = _fractional_matrix_power(
                         h_i, -0.5 / k)
 
-                preconditioned_grad = xp.rollaxis(preconditioned_grad, 0, k).dot(
-                    self.state['pow_h%d'%i])
+                preconditioned_grad = xp.tensordot(
+                    preconditioned_grad,
+                    self.state['pow_h%d' % i],
+                    axes=(0, 0))
             else:
                 # diagonal shampoo
                 assert h_i.ndim == 1
