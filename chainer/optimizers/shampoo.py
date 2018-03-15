@@ -54,7 +54,7 @@ class ShampooRule(optimizer.UpdateRule):
             self.state['v'] = xp.zeros_like(param.data)
             for i, n in enumerate(param.shape):
                 self.state['h%d'%i] = eps * (
-                    xp.eye if n >= self.diag_threshold else xp.ones
+                    xp.eye if n <= self.diag_threshold else xp.ones
                 )(n, dtype=param.dtype)
 
     def update_core(self, param):
