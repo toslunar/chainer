@@ -9,12 +9,12 @@ from chainer import testing
 
 class TestFractionalMatrixPower(unittest.TestCase):
 
+    def setUp(self):
+        xs = [numpy.random.randn(3, 3) for _ in range(2)]
+        self.mat = sum(x.dot(x.T) for x in xs)  # positive semidefinite
+
     def test1(self):
-        x = numpy.random.randn(3, 3)
-        x += x.T  # test symmetric matrix
-        a = x
-        a = a.dot(a)
-        a = a.dot(a)
+        a = self.mat
         t = -0.25
         numpy.testing.assert_allclose(
             shampoo._fractional_matrix_power(a, t),
