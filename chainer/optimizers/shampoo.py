@@ -1,5 +1,3 @@
-import numpy
-
 from chainer.backends import cuda
 from chainer import optimizer
 
@@ -53,7 +51,7 @@ class ShampooRule(optimizer.UpdateRule):
         with cuda.get_device_from_array(param.data):
             self.state['v'] = xp.zeros_like(param.data)
             for i, n in enumerate(param.shape):
-                self.state['h%d'%i] = eps * (
+                self.state['h%d' % i] = eps * (
                     xp.eye if n <= self.diag_threshold else xp.ones
                 )(n, dtype=param.dtype)
 
@@ -64,8 +62,6 @@ class ShampooRule(optimizer.UpdateRule):
 
         xp = cuda.get_array_module(param.data)
 
-        lr = self.hyperparam.lr
-        alpha = self.hyperparam.alpha
         pow_update = self.state['pow_update'] <= 0  # or self.t < 100
 
         k = param.ndim
@@ -75,13 +71,13 @@ class ShampooRule(optimizer.UpdateRule):
                 assert preconditioned_grad.shape[j] == g.shape[(i + j) % k]
 
             axis = tuple(j for j in range(k) if j != i)
-            h_i = self.state['h%d'%i]
+            h_i = self.state['h%d' % i]
             if h_i.ndim == 2:
                 # shampoo
                 h_i += xp.tensordot(
                     g, g, axes=(axis, axis))
                 if pow_update:
-                    self.state['pow_h%d'%i] = _fractional_matrix_power(
+                    self.state['pow_h%d' % i] = _fractional_matrix_power(
                         h_i, -0.5 / k)
 
                 preconditioned_grad = xp.rollaxis(preconditioned_grad, 0, k).dot(
@@ -91,10 +87,10 @@ class ShampooRule(optimizer.UpdateRule):
                 assert h_i.ndim == 1
                 h_i += xp.sum(g ** 2, axis=axis)
                 if pow_update:
-                    self.state['pow_h%d'%i] = h_i ** (-0.5 / k)
+                    self.state['pow_h%d' % i] = h_i ** (-0.5 / k)
 
                 preconditioned_grad = xp.rollaxis(preconditioned_grad, 0, k) \
-                    * self.state['pow_h%d'%i]
+                    * self.state['pow_h%d' % i]
 
         if pow_update:
             self.state['pow_update'] = 20  # TODO(kataoka): hyperparam
