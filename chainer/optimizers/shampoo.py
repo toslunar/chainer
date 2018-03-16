@@ -8,13 +8,13 @@ _default_hyperparam.alpha = 0.9
 _default_hyperparam.eps = 1.0  # ?
 
 
-def _fractional_matrix_power(A, t):
-    """Compute the fractional power of a matrix."""
+def _fractional_matrix_power_h(A, t):
+    """Compute the fractional power of a hermitian matrix."""
 
     xp = cuda.get_array_module(A)
-    u, s, v = xp.linalg.svd(A)
+    w, v = xp.linalg.eigh(A)
 
-    return xp.dot(u * (s ** t), v)
+    return xp.dot(v * (w ** t), v.T)
 
 
 class ShampooRule(optimizer.UpdateRule):
@@ -77,7 +77,7 @@ class ShampooRule(optimizer.UpdateRule):
                 h_i += xp.tensordot(
                     g, g, axes=(axis, axis))
                 if pow_update:
-                    self.state['pow_h%d' % i] = _fractional_matrix_power(
+                    self.state['pow_h%d' % i] = _fractional_matrix_power_h(
                         h_i, -0.5 / k)
 
                 preconditioned_grad = xp.tensordot(
