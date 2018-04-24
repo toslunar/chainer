@@ -69,7 +69,13 @@ class TestEinSum(unittest.TestCase):
             self._setup_tensor(-1, 1, shape, self.dtype)
             for shape in self.shapes
         ])
-        self.forward_answer = numpy.einsum(*self._get_args(self.inputs))
+        if self.dtype == numpy.float16:
+            self.forward_answer = numpy.einsum(
+                *self._get_args(self.inputs),
+                dtype=numpy.float64
+            ).astype(self.dtype)
+        else:
+            self.forward_answer = numpy.einsum(*self._get_args(self.inputs))
         self.g = self._setup_tensor(
             -1, 1, self.forward_answer.shape, self.dtype)
         self.gg_inputs = tuple([
