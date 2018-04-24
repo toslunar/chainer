@@ -1,3 +1,4 @@
+import functools
 import unittest
 
 import numpy
@@ -25,14 +26,15 @@ def _from_str_subscript(subscript):
 
 
 def skip_if(cond, reason):
-    def deco(f):
+    def decorator(impl):
+        @functools.wraps(impl)
         def wrapper(self, *args, **kwargs):
             if cond(self):
                 pytest.skip(reason)
             else:
-                f(self, *args, **kwargs)
+                impl(self, *args, **kwargs)
         return wrapper
-    return deco
+    return decorator
 
 
 @testing.parameterize(*testing.product_dict(
