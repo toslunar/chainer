@@ -1,6 +1,7 @@
 import unittest
 
 import numpy
+import pytest
 
 import chainer
 from chainer.backends import cuda
@@ -21,6 +22,17 @@ def _from_str_subscript(subscript):
         (Ellipsis if char == '@' else ord(char) - ord('a'))
         for char in subscript.replace('...', '@')
     ]
+
+
+def skip_if(cond, reason):
+    def deco(f):
+        def wrapper(self, *args, **kwargs):
+            if cond(self):
+                pytest.skip(reason)
+            else:
+                f(self, *args, **kwargs)
+        return wrapper
+    return deco
 
 
 @testing.parameterize(*testing.product_dict(
@@ -46,8 +58,7 @@ def _from_str_subscript(subscript):
         {'subscripts': 'i...,i->...i', 'shapes': ((3, 2, 2), (3,))},
     ],
     testing.product({
-        # float16 is not supported. See numpy issue #10899.
-        'dtype': [numpy.float32, numpy.float64],
+        'dtype': [numpy.float16, numpy.float32, numpy.float64],
         'subscript_type': ['str', 'int'],
     }),
 ))
@@ -86,6 +97,8 @@ class TestEinSum(unittest.TestCase):
         out = self.op(*[chainer.Variable(x) for x in self.inputs])
         testing.assert_allclose(self.forward_answer, out.data, atol, rtol)
 
+    @skip_if(lambda self: self.dtype == numpy.float16,
+             'float16 is not supported. See numpy issue #10899.')
     def test_einsum_forward_cpu(self):
         if self.dtype == numpy.float16:
             self.check_forward(self.inputs, atol=1e-3, rtol=1e-3)
@@ -105,6 +118,8 @@ class TestEinSum(unittest.TestCase):
             self.op, inputs_data, output_grad, atol=atol, rtol=rtol,
             dtype=numpy.float32)
 
+    @skip_if(lambda self: self.dtype == numpy.float16,
+             'float16 is not supported. See numpy issue #10899.')
     def test_einsum_backward_cpu(self):
         self.check_backward(self.inputs, self.g, atol=1e-2, rtol=5e-2)
 
@@ -124,6 +139,8 @@ class TestEinSum(unittest.TestCase):
             nonlinear, inputs_data, y_grad, inputs_grad_grad,
             atol=atol, rtol=rtol, dtype=numpy.float32)
 
+    @skip_if(lambda self: self.dtype == numpy.float16,
+             'float16 is not supported. See numpy issue #10899.')
     def test_einsum_double_backward_cpu(self):
         self.check_double_backward(
             self.inputs, self.g, self.gg_inputs,
@@ -202,7 +219,6 @@ def diag_einsum(
         {'subscripts': ',ij->i', 'i_shapes': ((), (3, 4),), 'o_shape': (3,)},
     ],
     [
-        # {'dtype': numpy.float16},
         {'dtype': numpy.float32},
         {'dtype': numpy.float64},
     ]
