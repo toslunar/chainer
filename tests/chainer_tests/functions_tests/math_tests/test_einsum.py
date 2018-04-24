@@ -100,7 +100,7 @@ class TestEinSum(unittest.TestCase):
         return numpy.random.uniform(_min, _max, shape).astype(dtype)
 
     def check_forward(self, inputs_data, atol=1e-4, rtol=1e-5):
-        out = self.op(*[chainer.Variable(x) for x in inputs])
+        out = self.op(*[chainer.Variable(x) for x in inputs_data])
         testing.assert_allclose(self.forward_answer, out.data, atol, rtol)
 
     @skip_if(lambda self: self.dtype == numpy.float16,
