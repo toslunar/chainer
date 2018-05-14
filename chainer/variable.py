@@ -152,7 +152,7 @@ class VariableNode(object):
 
     """
 
-    _creator_node = None
+    _creator_nodes = ()
     _data = None
     _rank = 0
     # Name of the Function is assigned if this variable is a gradient generated
@@ -171,6 +171,26 @@ class VariableNode(object):
 
         vdata = variable.data
         self._update_data_info(vdata)
+
+    def _merge(self, other):  # fuse_add
+        self._rank = max(self._rank, other._rank)
+        self._creator_nodes = self._creator_nodes + other._creator_nodes
+        self._old_style_grad_generator = self._old_style_grad_generator \
+            or other._old_style_grad_generator
+
+    @property
+    def _creator_node(self):
+        if self._creator_nodes:
+            return self._creator_nodes[0]
+        else:
+            return None
+
+    @_creator_node.setter
+    def _creator_node(self, func):
+        if func is None:
+            self._creator_nodes = ()
+        else:
+            self._creator_nodes = func,
 
     @property
     def creator(self):
@@ -488,6 +508,7 @@ Actual: {0}'''.format(type(data))
         self._node = VariableNode(self, name)
         self._grad_var = None if grad is None else Variable(grad)
         self._loss_scale = None
+        self._fuse_add = False
 
     def __copy__(self):
         return self._copy_to(Variable())
@@ -1007,7 +1028,8 @@ Actual: {0}'''.format(type(data))
                 heapq.heappush(cand_funcs, (-cand.rank, len(seen_set), cand))
                 seen_set.add(cand)
 
-        add_cand(self.creator_node)
+        for func in self._node._creator_nodes:
+            add_cand(func)
 
         def get_grad(node):
             if node is None:
@@ -1154,8 +1176,8 @@ Actual: {0}'''.format(type(data))
                     x_var._grad_var = grads[x]
                     x_var._loss_scale = loss_scale
 
-                if x.creator_node is not None:
-                    add_cand(x.creator_node)
+                for func in x._creator_nodes:
+                    add_cand(func)
 
             del gxs  # to reduce memory usage
             if initial_device is not None:

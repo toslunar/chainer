@@ -210,11 +210,28 @@ def add(*xs):  # lhs + rhs or add more than 2 variables
     if len(xs) == 2:
         lhs, rhs = xs
         if isinstance(rhs, variable.Variable):
+            if isinstance(lhs, variable.Variable):
+                fused_sum = fuse_add(lhs, rhs)
+                if fused_sum is not None:
+                    return fused_sum
+                return fuse_add(lhs, rhs)
             return Add().apply((lhs, rhs))[0]
         _check_constant_type(rhs)
         return AddConstant(rhs).apply((lhs,))[0]
     else:
         return MultiAdd().apply(xs)[0]
+
+
+def fuse_add(lhs, rhs):
+    if not lhs._fuse_add or not rhs._fuse_add or \
+            lhs.array is None or rhs.array is None or \
+            lhs.dtype != rhs.dtype or lhs.shape != rhs.shape:
+        return None
+    # lhs._data[0] += rhs._data[0]
+    lhs._data[0] = utils.force_array(lhs._data[0] + rhs._data[0])
+    lhs._node._merge(rhs._node)
+    rhs._node = lhs._node
+    return lhs
 
 
 class Sub(function_node.FunctionNode):

@@ -285,8 +285,12 @@ Use apply() method instead.\
 
         ret = tuple([variable.Variable(y, requires_grad=requires_grad)
                      for y in outputs])
+        for y in ret:
+            y._fuse_add = True
 
         if configuration.config.enable_backprop:
+            for x in input_vars:
+                x._fuse_add = False
             # Topological ordering
             self.rank = max([x.rank for x in input_vars]) if input_vars else 0
             # Add backward edges
@@ -305,6 +309,7 @@ Use apply() method instead.\
                 for index in self._output_indexes_to_retain:
                     ret[index].retain_data()
                     retained_data.append(outputs[index])
+                    ret[index]._fuse_add = False
                 self._retained_output_data = tuple(retained_data)
 
             self.lazy_grad_sum = configuration.config.lazy_grad_sum
