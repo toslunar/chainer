@@ -573,7 +573,7 @@ Use apply() method instead.\
         else:
             return tuple([gx if g_input is None else
                           g_input if gx is None else
-                          gx + g_input
+                          chainer.variable.fuse_add(gx, g_input)
                           for gx, g_input in six.moves.zip(gxs, grad_inputs)])
 
     def get_retained_inputs(self):

@@ -14,6 +14,19 @@ from chainer.backends import intel64
 from chainer import initializers
 from chainer.initializers import constant
 from chainer.utils import argument
+from chainer.utils import force_array
+
+
+def fuse_add(lhs, rhs):
+    if not lhs._fuse_add or not rhs._fuse_add or \
+            lhs.array is None or rhs.array is None or \
+            lhs.dtype != rhs.dtype or lhs.shape != rhs.shape:
+        return lhs + rhs
+    # lhs._data[0] += rhs._data[0]
+    lhs._data[0] = force_array(lhs._data[0] + rhs._data[0])
+    lhs._node._merge(rhs._node)
+    rhs._node = lhs._node
+    return lhs
 
 
 def _check_grad_type(func, x, gx):
