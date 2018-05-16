@@ -677,6 +677,7 @@ def backward_all(args_list):
 
     grads = {}
     grads[output_node] = output_grad
+    del output_node
 
     is_debug = chainer.is_debug()
 
@@ -685,18 +686,19 @@ def backward_all(args_list):
     seen_set = set()
 
     def add_cand(cand):
-        if cand not in seen_set:
+        if id(cand) not in seen_set:
             # Negate since heapq is min-heap
             heapq.heappush(cand_funcs, (-cand.rank, len(seen_set), cand))
-            seen_set.add(cand)
+            seen_set.add(id(cand))
 
     add_cand(self)
+    del self
 
     def get_grad(node):
         if node is None:
             return None
         if node in grads:
-            return grads[node]
+            return grads.pop(node)
         return node.grad_var
 
     def set_grad(node, value):
@@ -722,11 +724,13 @@ def backward_all(args_list):
         in_data = tuple([x.data for x in inputs])
         # We need calculate the value of for the out_grad which accumulated
         # because now out_grad is used in backward calculation.
+        """
         for y in outputs:
             grad = get_grad(y)
             if isinstance(grad, tuple):
                 grad = chainer.functions.add(*grad)
                 set_grad(y, grad)
+        """
         out_grad = tuple([get_grad(y) for y in outputs])
         out_grad_data = tuple(
             [None if g is None else g.data for g in out_grad])
@@ -806,6 +810,7 @@ def backward_all(args_list):
                             'NaN is detected on backward computation of '
                             '{}'.format(func.label))
 
+        """
         if not retain_grad:
             for y in outputs:
                 if y is not None and y is not output_node:
@@ -813,6 +818,7 @@ def backward_all(args_list):
                     y_var = y.get_variable_or_none()
                     if y_var is not None:
                         y_var._grad_var = None
+        """
 
         for i, gx in enumerate(gxs):
             if gx is None:
