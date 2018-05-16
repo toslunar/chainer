@@ -1,6 +1,6 @@
 import chainer
 from chainer.backends import cuda
-import numpy as cupy
+import cupy
 
 
 class FooFunc(chainer.FunctionNode):
@@ -10,19 +10,19 @@ class FooFunc(chainer.FunctionNode):
 
     def __del__(self):
         self.bar = None
-        print("{:10d} DEL: {}".format(1, self.name))
+        print("{:10d} DEL: {}".format(cuda.memory_pool.used_bytes(), self.name))
 
     def forward(self, inputs):
         # Dummy array which can be used in backward()
         self.bar = cupy.ones((100, 100, 100, 10), cupy.float32)
         x, = inputs
         y = x * 2
-        print("{:10d} FWD: {}".format(1, self.name))
+        print("{:10d} FWD: {}".format(cuda.memory_pool.used_bytes(), self.name))
         return y,
 
     def backward(self, indexes, grad_outputs):
         gy, = grad_outputs
-        print("{:10d} BWD: {}".format(1, self.name))
+        print("{:10d} BWD: {}".format(cuda.memory_pool.used_bytes(), self.name))
         return gy * 2,
 
 
