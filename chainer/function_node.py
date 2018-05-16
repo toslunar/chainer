@@ -571,192 +571,6 @@ Use apply() method instead.\
                           gx + g_input
                           for gx, g_input in six.moves.zip(gxs, grad_inputs)])
 
-    def backward_all(self, output_node, output_grad,
-                     retain_grad, loss_scale, initial_device):
-
-        grads = {}
-        grads[output_node] = output_grad
-
-        is_debug = chainer.is_debug()
-
-
-        cand_funcs = []
-        seen_set = set()
-
-        def add_cand(cand):
-            if cand not in seen_set:
-                # Negate since heapq is min-heap
-                heapq.heappush(cand_funcs, (-cand.rank, len(seen_set), cand))
-                seen_set.add(cand)
-
-        add_cand(self)
-
-        def get_grad(node):
-            if node is None:
-                return None
-            if node in grads:
-                return grads[node]
-            return node.grad_var
-
-        def set_grad(node, value):
-            if node is None:
-                return
-            if node in grads:
-                grads[node] = value
-            var = node.get_variable()
-            if var is not None:
-                var._grad_var = value
-
-        while cand_funcs:
-            _, _, func = heapq.heappop(cand_funcs)
-            inputs = func.inputs
-            target_input_indexes = tuple([
-                i for i, x in enumerate(inputs) if x.requires_grad
-            ])
-            if not target_input_indexes:
-                continue
-            outputs = [y() for y in func.outputs]  # access via weak ref
-
-            in_data = tuple([x.data for x in inputs])
-            # We need calculate the value of for the out_grad which accumulated
-            # because now out_grad is used in backward calculation.
-            for y in outputs:
-                grad = get_grad(y)
-                if isinstance(grad, tuple):
-                    grad = chainer.functions.add(*grad)
-                    set_grad(y, grad)
-            out_grad = tuple([get_grad(y) for y in outputs])
-            out_grad_data = tuple(
-                [None if g is None else g.data for g in out_grad])
-            hooks = chainer.get_function_hooks()
-            if func._n_local_function_hooks != 0:
-                hooks = collections.OrderedDict(hooks)
-                hooks.update(func.local_function_hooks)
-            hooks = hooks.values()  # avoid six for performance
-
-            cuda.get_device_from_array(*in_data).use()
-            for hook in hooks:
-                hook.backward_preprocess(func, in_data, out_grad_data)
-
-            # Collect the current input gradients.
-            #
-            # Note (Tokui): When the same variable is passed to multiple input
-            # slots (e.g. an expression like ``f(x, x)``), it makes the
-            # gradient accumulation complicated since the back-propagated
-            # gradients w.r.t. the first and second argument should be
-            # accumulated to the current gradient w.r.t. the same variable.
-            # In this case, the current implementation passes the current
-            # gradient only to the first occurrence of the variable in the
-            # input tuple and passes ``None`` to the rest of the occurrences.
-            # For example, when the input variables are ``(x, x)``, the
-            # input gradient passed to the ``backward_accumulate`` method is
-            # ``(gx, None)`` where ``gx`` is the current gradient of ``x``.
-            # See also the docstring of ``FunctionNode.backward_accumulate``.
-            target_inputs = [inputs[i] for i in target_input_indexes]
-            in_grad = []
-            for i, index_i in enumerate(target_input_indexes):
-                x = inputs[index_i]
-                if x in target_inputs[:i]:
-                    # Pass ``None`` for duplicated input variables except for
-                    # the first occurrence (see the comment above).
-                    gx = None
-                elif x in grads:
-                    gx = grads[x]
-                elif x.creator_node is None:
-                    x._check_old_style_gradient()
-                    # accumulate the gradient only if the node is a leaf
-                    gx = x.grad_var
-                else:
-                    gx = None
-                in_grad.append(gx)
-            in_grad = tuple(in_grad)
-
-            gxs = func.backward_accumulate(
-                target_input_indexes, out_grad, in_grad)
-
-            assert len(gxs) == len(in_grad)
-            for hook in hooks:
-                hook.backward_postprocess(func, in_data, out_grad_data)
-
-            if is_debug:
-                # gxs can be a tuple of tuples of variables (in case of
-                # lazy-grad-sum).
-                # iter_gxs expands it as a sequence of variables.
-                # It also ignores None entries.
-                def iter_gxs(gxs):
-                    for gx in gxs:
-                        if gx is None:
-                            continue
-                        elif isinstance(gx, tuple):
-                            for gx_ in iter_gxs(gx):
-                                yield gx_
-                        elif isinstance(gx, variable.Variable):
-                            yield gx
-                        else:
-                            assert False
-
-                for gx in iter_gxs(gxs):
-                    gx_data = gx.data
-                    if gx_data.dtype.kind == 'f':
-                        cuda.get_device_from_array(gx_data).use()
-                        if cuda.get_array_module(gx_data).isnan(gx_data).any():
-                            raise RuntimeError(
-                                'NaN is detected on backward computation of '
-                                '{}'.format(func.label))
-
-            if not retain_grad:
-                for y in outputs:
-                    if y is not None and y is not output_node:
-                        grads[y] = None
-                        y_var = y.get_variable_or_none()
-                        if y_var is not None:
-                            y_var._grad_var = None
-
-            for i, gx in enumerate(gxs):
-                if gx is None:
-                    continue
-
-                x = target_inputs[i]
-                if not x.requires_grad:
-                    continue
-
-                if isinstance(gx, tuple):
-                    # No need to check each data in the tuple,
-                    # just check the new gx concated in
-                    # backward_accumulate().
-                    variable._check_grad_type(func, x, gx[0].data)
-                else:
-                    variable._check_grad_type(func, x, gx.data)
-
-                if x in target_inputs[:i]:
-                    # Accumulate the duplicated gradients here. See the comment
-                    # above the code that builds ``in_grad``.
-                    cur_gx = grads[x]
-                    if func.lazy_grad_sum:
-                        if x.creator is None:
-                            gx = _backprop_utils.add(gx, cur_gx)
-                            grads[x] = gx
-                        else:
-                            grads[x] = _backprop_utils.concat_variable(
-                                gx, cur_gx)
-                    else:
-                        grads[x] = gx if cur_gx is None else gx + cur_gx
-
-                else:
-                    grads[x] = gx
-
-                x_var = x.get_variable_or_none()
-                if x_var is not None:
-                    x_var._grad_var = grads[x]
-                    x_var._loss_scale = loss_scale
-
-                if x.creator_node is not None:
-                    add_cand(x.creator_node)
-
-            del gxs  # to reduce memory usage
-            if initial_device is not None:
-                initial_device.use()
-
     def get_retained_inputs(self):
         """Returns a tuple of retained input variables.
 
@@ -853,6 +667,197 @@ Use apply() method instead.\
             del self.local_function_hooks[name]
         else:
             raise KeyError('Hook %s does not exist' % name)
+
+
+def backward_all(args_list):
+
+    self, output_node, output_grad, retain_grad, loss_scale, initial_device = \
+        args_list
+    del args_list[:]
+
+    grads = {}
+    grads[output_node] = output_grad
+
+    is_debug = chainer.is_debug()
+
+
+    cand_funcs = []
+    seen_set = set()
+
+    def add_cand(cand):
+        if cand not in seen_set:
+            # Negate since heapq is min-heap
+            heapq.heappush(cand_funcs, (-cand.rank, len(seen_set), cand))
+            seen_set.add(cand)
+
+    add_cand(self)
+
+    def get_grad(node):
+        if node is None:
+            return None
+        if node in grads:
+            return grads[node]
+        return node.grad_var
+
+    def set_grad(node, value):
+        if node is None:
+            return
+        if node in grads:
+            grads[node] = value
+        var = node.get_variable()
+        if var is not None:
+            var._grad_var = value
+
+    while cand_funcs:
+        print(grads)
+        _, _, func = heapq.heappop(cand_funcs)
+        inputs = func.inputs
+        target_input_indexes = tuple([
+            i for i, x in enumerate(inputs) if x.requires_grad
+        ])
+        if not target_input_indexes:
+            continue
+        outputs = [y() for y in func.outputs]  # access via weak ref
+
+        in_data = tuple([x.data for x in inputs])
+        # We need calculate the value of for the out_grad which accumulated
+        # because now out_grad is used in backward calculation.
+        for y in outputs:
+            grad = get_grad(y)
+            if isinstance(grad, tuple):
+                grad = chainer.functions.add(*grad)
+                set_grad(y, grad)
+        out_grad = tuple([get_grad(y) for y in outputs])
+        out_grad_data = tuple(
+            [None if g is None else g.data for g in out_grad])
+        hooks = chainer.get_function_hooks()
+        if func._n_local_function_hooks != 0:
+            hooks = collections.OrderedDict(hooks)
+            hooks.update(func.local_function_hooks)
+        hooks = hooks.values()  # avoid six for performance
+
+        cuda.get_device_from_array(*in_data).use()
+        for hook in hooks:
+            hook.backward_preprocess(func, in_data, out_grad_data)
+
+        # Collect the current input gradients.
+        #
+        # Note (Tokui): When the same variable is passed to multiple input
+        # slots (e.g. an expression like ``f(x, x)``), it makes the
+        # gradient accumulation complicated since the back-propagated
+        # gradients w.r.t. the first and second argument should be
+        # accumulated to the current gradient w.r.t. the same variable.
+        # In this case, the current implementation passes the current
+        # gradient only to the first occurrence of the variable in the
+        # input tuple and passes ``None`` to the rest of the occurrences.
+        # For example, when the input variables are ``(x, x)``, the
+        # input gradient passed to the ``backward_accumulate`` method is
+        # ``(gx, None)`` where ``gx`` is the current gradient of ``x``.
+        # See also the docstring of ``FunctionNode.backward_accumulate``.
+        target_inputs = [inputs[i] for i in target_input_indexes]
+        in_grad = []
+        for i, index_i in enumerate(target_input_indexes):
+            x = inputs[index_i]
+            if x in target_inputs[:i]:
+                # Pass ``None`` for duplicated input variables except for
+                # the first occurrence (see the comment above).
+                gx = None
+            elif x in grads:
+                gx = grads[x]
+            elif x.creator_node is None:
+                x._check_old_style_gradient()
+                # accumulate the gradient only if the node is a leaf
+                gx = x.grad_var
+            else:
+                gx = None
+            in_grad.append(gx)
+        in_grad = tuple(in_grad)
+
+        gxs = func.backward_accumulate(
+            target_input_indexes, out_grad, in_grad)
+
+        assert len(gxs) == len(in_grad)
+        for hook in hooks:
+            hook.backward_postprocess(func, in_data, out_grad_data)
+
+        if is_debug:
+            # gxs can be a tuple of tuples of variables (in case of
+            # lazy-grad-sum).
+            # iter_gxs expands it as a sequence of variables.
+            # It also ignores None entries.
+            def iter_gxs(gxs):
+                for gx in gxs:
+                    if gx is None:
+                        continue
+                    elif isinstance(gx, tuple):
+                        for gx_ in iter_gxs(gx):
+                            yield gx_
+                    elif isinstance(gx, variable.Variable):
+                        yield gx
+                    else:
+                        assert False
+
+            for gx in iter_gxs(gxs):
+                gx_data = gx.data
+                if gx_data.dtype.kind == 'f':
+                    cuda.get_device_from_array(gx_data).use()
+                    if cuda.get_array_module(gx_data).isnan(gx_data).any():
+                        raise RuntimeError(
+                            'NaN is detected on backward computation of '
+                            '{}'.format(func.label))
+
+        if not retain_grad:
+            for y in outputs:
+                if y is not None and y is not output_node:
+                    grads[y] = None
+                    y_var = y.get_variable_or_none()
+                    if y_var is not None:
+                        y_var._grad_var = None
+
+        for i, gx in enumerate(gxs):
+            if gx is None:
+                continue
+
+            x = target_inputs[i]
+            if not x.requires_grad:
+                continue
+
+            if isinstance(gx, tuple):
+                # No need to check each data in the tuple,
+                # just check the new gx concated in
+                # backward_accumulate().
+                variable._check_grad_type(func, x, gx[0].data)
+            else:
+                variable._check_grad_type(func, x, gx.data)
+
+            if x in target_inputs[:i]:
+                # Accumulate the duplicated gradients here. See the comment
+                # above the code that builds ``in_grad``.
+                cur_gx = grads[x]
+                if func.lazy_grad_sum:
+                    if x.creator is None:
+                        gx = _backprop_utils.add(gx, cur_gx)
+                        grads[x] = gx
+                    else:
+                        grads[x] = _backprop_utils.concat_variable(
+                            gx, cur_gx)
+                else:
+                    grads[x] = gx if cur_gx is None else gx + cur_gx
+
+            else:
+                grads[x] = gx
+
+            x_var = x.get_variable_or_none()
+            if x_var is not None:
+                x_var._grad_var = grads[x]
+                x_var._loss_scale = loss_scale
+
+            if x.creator_node is not None:
+                add_cand(x.creator_node)
+
+        del gxs  # to reduce memory usage
+        if initial_device is not None:
+            initial_device.use()
 
 
 def grad(outputs, inputs, grad_outputs=None, grad_inputs=None, set_grad=False,

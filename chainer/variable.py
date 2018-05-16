@@ -909,7 +909,7 @@ Actual: {0}'''.format(type(data))
         self._node.set_creator_node(fnode)
 
     def backward(self, retain_grad=False, enable_double_backprop=False,
-                 loss_scale=None):
+                 loss_scale=None, execute=True):
         """Runs error backpropagation (a.k.a.\\  backprop) from this variable.
 
         On backprop,
@@ -961,9 +961,9 @@ Actual: {0}'''.format(type(data))
                 are to be updated.
         """
         with chainer.using_config('enable_backprop', enable_double_backprop):
-            self._backward_main(retain_grad, loss_scale)
+            return self._backward_main(retain_grad, loss_scale, execute)
 
-    def _backward_main(self, retain_grad, loss_scale):
+    def _backward_main(self, retain_grad, loss_scale, execute):
         self._node._check_old_style_gradient()
         func = self.creator_node
         if func is None:
@@ -993,8 +993,13 @@ Actual: {0}'''.format(type(data))
                     self.grad = numpy.ones_like(self.data)
                 else:
                     self.grad = cuda.cupy.ones_like(self.data)
-        func.backward_all(
-            self._node, self._grad_var, retain_grad, loss_scale, initial_device)
+
+        args = [func, self._node, self._grad_var, retain_grad, loss_scale, initial_device]
+
+        if execute:
+            chainer.function_node.backward_all(args)
+        else:
+            return args  #lambda: chainer.function_node.backward_all(args)
 
     def reshape(self, *shape):
         """Returns a variable of a different shape and the same content.
