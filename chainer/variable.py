@@ -995,11 +995,13 @@ Actual: {0}'''.format(type(data))
                     self.grad = cuda.cupy.ones_like(self.data)
 
         args = [func, self._node, self._grad_var, retain_grad, loss_scale, initial_device]
+        def cont():
+            chainer.function_node.backward_all(args)
 
         if execute:
-            chainer.function_node.backward_all(args)
+            cont()
         else:
-            return args  #lambda: chainer.function_node.backward_all(args)
+            return cont
 
     def reshape(self, *shape):
         """Returns a variable of a different shape and the same content.

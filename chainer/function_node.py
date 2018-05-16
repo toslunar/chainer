@@ -711,7 +711,7 @@ def backward_all(args_list):
             var._grad_var = value
 
     while cand_funcs:
-        print(grads)
+        # print(grads)
         _, _, func = heapq.heappop(cand_funcs)
         inputs = func.inputs
         target_input_indexes = tuple([
