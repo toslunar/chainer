@@ -690,7 +690,7 @@ Use apply() method instead.\
                         elif isinstance(gx, tuple):
                             for gx_ in iter_gxs(gx):
                                 yield gx_
-                        elif isinstance(gx, Variable):
+                        elif isinstance(gx, variable.Variable):
                             yield gx
                         else:
                             assert False
