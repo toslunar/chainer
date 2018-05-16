@@ -706,7 +706,7 @@ Use apply() method instead.\
 
             if not retain_grad:
                 for y in outputs:
-                    if y is not None and y is not self:
+                    if y is not None and y is not output_node:
                         grads[y] = None
                         y_var = y.get_variable_or_none()
                         if y_var is not None:
