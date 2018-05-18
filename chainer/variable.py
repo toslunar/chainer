@@ -1,4 +1,5 @@
 import collections
+import contextlib
 import copy
 import heapq
 import traceback
@@ -14,6 +15,21 @@ from chainer.backends import intel64
 from chainer import initializers
 from chainer.initializers import constant
 from chainer.utils import argument
+
+
+_delay_backward = 0
+_delayed_backward_calls = []
+
+
+@contextlib.contextmanager
+def delay_backward():
+    global _delay_backward, _delayed_backward_calls
+    _delay_backward += 1
+    yield
+    _delay_backward -= 1
+    if _delay_backward == 0:
+        for c in _delayed_backward_calls:
+            c()
 
 
 def _check_grad_type(func, x, gx):
@@ -961,7 +977,7 @@ Actual: {0}'''.format(type(data))
                 are to be updated.
         """
         with chainer.using_config('enable_backprop', enable_double_backprop):
-            return self._backward_main(retain_grad, loss_scale, execute)
+            self._backward_main(retain_grad, loss_scale, execute)
 
     def _backward_main(self, retain_grad, loss_scale, execute):
         self._node._check_old_style_gradient()
@@ -998,10 +1014,10 @@ Actual: {0}'''.format(type(data))
         def cont():
             chainer.function_node.backward_all(args)
 
-        if execute:
-            cont()
+        if _delay_backward:
+            _delayed_backward_calls.append(cont)
         else:
-            return cont
+            cont()
 
     def reshape(self, *shape):
         """Returns a variable of a different shape and the same content.

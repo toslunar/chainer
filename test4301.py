@@ -43,9 +43,9 @@ def main():
     print(x, y)
     y.grad = cupy.ones_like(y.data)
     y_grad_var = y.grad_var
-    cont = y.backward(execute=False)
-    del y
-    cont()
+    with chainer.variable.delay_backward():
+        y.backward()
+        del y
     print(x.grad_var, y_grad_var)
     print(chainer.grad([x.grad_var], [y_grad_var]))
 
