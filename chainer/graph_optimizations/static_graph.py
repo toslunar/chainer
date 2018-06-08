@@ -1032,11 +1032,14 @@ def static_graph(*args, **kwargs):
 
         verbosity_level (int): Depending on the value, print additional
             information:
-            0: Warnings only. (the default value)
-            1: Show only information that is collected during the first
-                iteration and when a new static schedule is created.
-            2: Detailed debugging information, possibly showing new
-                information every iteration.
+
+                * 0: Warnings only. (the default value)
+
+                * 1: Show only information that is collected during the first
+                  iteration and when a new static schedule is created.
+
+                * 2: Detailed debugging information, possibly showing new
+                  information every iteration.
 
         enable_double_backprop (bool): If `True`, enable double-backprop.
             The default value is `False` (not enabled).

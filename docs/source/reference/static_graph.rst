@@ -94,7 +94,7 @@ Side effects
 It is important to be careful that there is no code containing side effects inside a static chain's ``__call__()``. This is because the chains' define-by-run code normally only runs once (or only when/if it needs to generate a new schedule). Any code with side effects would therefore also only every run once, or at most, run infrequently. It actually is possible to include code with side effects, but it most be explicitly marked as such using :meth:`chainer.static_graph_utilities.static_code()`.
 
 Effects on model debugging
---------------------
+--------------------------
 
 Note that since the code in the static chain's ``__call__()`` only runs during the first iteration, you will only be able to debug this code during the first iteration. It is assumed that if the chain is actually is static, any problems in its define-by-run code should be apparant during the first iteration and it should not be (as) necessary to debug this code in later iterations. However, this feature does provide some functionality to help with debugging. For example, it is possible to obtain and inspect the current static schedules. It is also possible to directly step through the code of the static schedule if you wish (by debugging the ``forward()`` method of :class:`StaticScheduleFunction` in :mod:`~chainer.static_graph`).
 
