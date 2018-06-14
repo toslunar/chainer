@@ -135,7 +135,7 @@ class SoftmaxCrossEntropy(function.Function):
             coeff = max(1, len(t))
         self._coeff = cupy.divide(1.0, coeff, dtype=x.dtype)
 
-        log_y = cupy.rollaxis(log_y, 1, log_y.ndim)
+        log_y = cupy.moveaxis(log_y, 1, -1)
         if self.reduce == 'mean':
             ret = cuda.reduce(
                 'S t, raw T log_y, int32 n_channel, raw T coeff, '
@@ -267,7 +267,7 @@ def _double_backward_softmax_cross_entropy(x, t, normalize, class_weight,
 
     in_use = (t != ignore_label).astype(x.dtype)
 
-    loss = chainer.functions.rollaxis(loss, 1, loss.ndim)
+    loss = chainer.functions.moveaxis(loss, 1, -1)
     loss = chainer.functions.reshape(loss, (-1, loss.shape[-1]))
 
     # Replace ignore_label value with one valid for F.select_item below.
