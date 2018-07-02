@@ -162,7 +162,7 @@ Let's start our python program. Matplotlib is used for the graphs to show traini
    import matplotlib
    matplotlib.use('Agg')
 
-Typical imports for a Chainer program. :class:`~chainer.links` contain trainable parameters and :class:`~chainer.functions` do not.
+Typical imports for a Chainer program. :mod:`~chainer.links` contain trainable parameters and :mod:`~chainer.functions` do not.
 
 .. code-block:: python
 
@@ -178,11 +178,11 @@ Typical imports for a Chainer program. :class:`~chainer.links` contain trainable
 Trainer Structure
 ~~~~~~~~~~~~~~~~~
 
-A :class:`chainer.trainer` is used to set up our neural network and data for training. The components of the :class:`chainer.trainer` are generally hierarchical, and are organized as follows:
+A :class:`chainer.training.Trainer` is used to set up our neural network and data for training. The components of the :class:`~chainer.training.Trainer` are generally hierarchical, and are organized as follows:
 
 .. image:: ../image/glance/trainer.png
 
-Each of the components is fed information from the components within it. Setting up the trainer starts at the inner components, and moves outward, with the exception of :class:`~chainer.training.extensions`, which are added after the :class:`chainer.trainer` is defined.
+Each of the components is fed information from the components within it. Setting up the trainer starts at the inner components, and moves outward, with the exception of :mod:`~chainer.training.extensions`, which are added after the :class:`~chainer.training.Trainer` is defined.
 
 Dataset
 ~~~~~~~
@@ -206,7 +206,7 @@ Iterator
 ~~~~~~~~
 .. image:: ../image/glance/trainer-iterator.png
 
-Configure :class:`~chainer.iterators` to step through batches of the data for training and for testing validation. In this case, we'll use a batch size of 100, no repeating, and shuffling not required since we already shuffled the dataset on reading it in.
+Configure :mod:`~chainer.iterators` to step through batches of the data for training and for testing validation. In this case, we'll use a batch size of 100, no repeating, and shuffling not required since we already shuffled the dataset on reading it in.
 
 .. code-block:: python
 
@@ -220,7 +220,7 @@ Model
 
 Next, we need to define the neural network for inclusion in our model. For our mushrooms, we'll chain together two fully-connected, :class:`~chainer.links.Linear`, hidden layers between the input and output layers.
 
-As an activation function, we'll use standard Rectified Linear Units (:meth:`~chainer.functions.relu`).
+As an activation function, we'll use standard Rectified Linear Units (:func:`~chainer.functions.relu`).
 
 .. code-block:: python
 
@@ -251,7 +251,7 @@ Optimizer
 ~~~~~~~~~~~~
 .. image:: ../image/glance/trainer-optimizer.png
 
-Pick an :class:`~chainer.optimizer`, and set up the :class:`~chainer.model` to use it.
+Pick an :class:`~chainer.Optimizer`, and set up the ``model`` to use it.
 
 .. code-block:: python
 
