@@ -162,7 +162,7 @@ Let's start our python program. Matplotlib is used for the graphs to show traini
    import matplotlib
    matplotlib.use('Agg')
 
-Typical imports for a Chainer program. :mod:`~chainer.links` contain trainable parameters and :mod:`~chainer.functions` do not.
+Typical imports for a Chainer program. :mod:`chainer.links` contain trainable parameters and :mod:`chainer.functions` do not.
 
 .. code-block:: python
 
@@ -178,7 +178,7 @@ Typical imports for a Chainer program. :mod:`~chainer.links` contain trainable p
 Trainer Structure
 ~~~~~~~~~~~~~~~~~
 
-A :class:`chainer.training.Trainer` is used to set up our neural network and data for training. The components of the :class:`~chainer.training.Trainer` are generally hierarchical, and are organized as follows:
+A :class:`~chainer.training.Trainer` is used to set up our neural network and data for training. The components of the :class:`~chainer.training.Trainer` are generally hierarchical, and are organized as follows:
 
 .. image:: ../image/glance/trainer.png
 
@@ -263,14 +263,14 @@ Updater
 ~~~~~~~~~
 .. image:: ../image/glance/trainer-updater.png
 
-Now that we have the training :class:`~chainer.iterator` and :class:`~chainer.optimizer` set up, we link them both together into the :class:`~chainer.updater`. The :class:`~chainer.updater` uses the minibatches from the :class:`~chainer.iterator`, and then does the forward and backward processing of the model, and updates the parameters of the model according to the :class:`~chainer.optimizer`. Setting the ``device=-1`` sets the device as the CPU. To use a GPU, set ``device`` equal to the number of the GPU, usually ``device=0``.
+Now that we have the training :class:`~chainer.dataset.Iterator` and :class:`~chainer.Optimizer` set up, we link them both together into the :class:`~chainer.training.Updater`. The :class:`~chainer.training.Updater` uses the minibatches from the :class:`~chainer.dataset.Iterator`, and then does the forward and backward processing of the model, and updates the parameters of the model according to the :class:`~chainer.Optimizer`. Setting the ``device=-1`` sets the device as the CPU. To use a GPU, set ``device`` equal to the number of the GPU, usually ``device=0``.
 
 .. code-block:: python
 
    # Create the updater, using the optimizer
    updater = training.StandardUpdater(train_iter, optimizer, device=-1)
 
-Set up the :class:`~chainer.updater` to be called after the training batches and set the number of batches per epoch to 100. The learning rate per epoch will be output to the directory ``result``.
+Set up the :class:`~chainer.training.Updater` to be called after the training batches and set the number of batches per epoch to 100. The learning rate per epoch will be output to the directory ``result``.
 
 .. code-block:: python
 
@@ -281,7 +281,7 @@ Extensions
 ~~~~~~~~~~
 .. image:: ../image/glance/trainer-extensions.png
 
-Use the testing :class:`~chainer.iterator` defined above for an :class:`~chainer.training.extensions.Evaluator` extension to the trainer to provide test scores.
+Use the testing :class:`~chainer.dataset.Iterator` defined above for an :class:`~chainer.training.extensions.Evaluator` extension to the trainer to provide test scores.
 
 If using a GPU instead of the CPU, set ``device`` to the ID of the GPU, usually ``0``.
 
@@ -295,7 +295,7 @@ Save a computational graph from ``loss`` variable at the first iteration. ``main
 
    trainer.extend(extensions.dump_graph('main/loss'))
 
-Take a snapshot of the ``trainer`` object every 20 epochs.
+Take a snapshot of the :class:`~chainer.training.Trainer` object every 20 epochs.
 
 .. code-block:: python
 
