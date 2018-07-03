@@ -27,7 +27,7 @@ Full Code
 Here's the whole picture of the code:
 
 .. testcode::
-    
+
    import matplotlib
    matplotlib.use('Agg')
 
@@ -37,9 +37,9 @@ Here's the whole picture of the code:
    from chainer import datasets
    from chainer import training
    from chainer.training import extensions
-   
+
    import numpy as np
-   
+
    mushroomsfile = 'mushrooms.csv'
 
 .. testcode::
@@ -53,17 +53,17 @@ Here's the whole picture of the code:
        mushroomsfile, delimiter=',', dtype=str, skip_header=1)
    for col in range(data_array.shape[1]):
        data_array[:, col] = np.unique(data_array[:, col], return_inverse=True)[1]
-   
+
    X = data_array[:, 1:].astype(np.float32)
    Y = data_array[:, 0].astype(np.int32)[:, None]
    train, test = datasets.split_dataset_random(
        datasets.TupleDataset(X, Y), int(data_array.shape[0] * .7))
-   
+
    train_iter = chainer.iterators.SerialIterator(train, 100)
    test_iter = chainer.iterators.SerialIterator(
        test, 100, repeat=False, shuffle=False)
-   
-   
+
+
    # Network definition
    class MLP(chainer.Chain):
        def __init__(self, n_units, n_out):
@@ -73,20 +73,20 @@ Here's the whole picture of the code:
                self.l1 = L.Linear(n_units)  # n_in -> n_units
                self.l2 = L.Linear(n_units)  # n_units -> n_units
                self.l3 = L.Linear(n_out)  # n_units -> n_out
-   
+
        def __call__(self, x):
            h1 = F.relu(self.l1(x))
            h2 = F.relu(self.l2(h1))
            return self.l3(h2)
-   
-   
+
+
    model = L.Classifier(
        MLP(44, 1), lossfun=F.sigmoid_cross_entropy, accfun=F.binary_accuracy)
-   
+
    # Setup an optimizer
    optimizer = chainer.optimizers.SGD()
    optimizer.setup(model)
-   
+
    # Create the updater, using the optimizer
    updater = training.StandardUpdater(train_iter, optimizer, device=-1)
 
@@ -103,16 +103,16 @@ Here's the whole picture of the code:
 
    # Evaluate the model with the test dataset for each epoch
    trainer.extend(extensions.Evaluator(test_iter, model, device=-1))
-   
+
    # Dump a computational graph from 'loss' variable at the first iteration
    # The "main" refers to the target link of the "main" optimizer.
    trainer.extend(extensions.dump_graph('main/loss'))
-   
+
    trainer.extend(extensions.snapshot(), trigger=(20, 'epoch'))
-   
+
    # Write a log of evaluation statistics for each epoch
    trainer.extend(extensions.LogReport())
-   
+
    # Save two plot images to the result dir
    if extensions.PlotReport.available():
        trainer.extend(
@@ -122,25 +122,25 @@ Here's the whole picture of the code:
            extensions.PlotReport(
                ['main/accuracy', 'validation/main/accuracy'],
                'epoch', file_name='accuracy.png'))
-   
+
    # Print selected entries of the log to stdout
    trainer.extend(extensions.PrintReport(
        ['epoch', 'main/loss', 'validation/main/loss',
         'main/accuracy', 'validation/main/accuracy', 'elapsed_time']))
-   
+
    #  Run the training
    trainer.run()
-   
+
    x, t = test[np.random.randint(len(test))]
 
    predict = model.predictor(x[None]).data
    predict = predict[0][0]
-   
+
    if predict >= 0:
       print('Predicted Poisonous, Actual ' + ['Edible', 'Poisonous'][t[0]])
    else:
       print('Predicted Edible, Actual ' + ['Edible', 'Poisonous'][t[0]])
-   
+
 .. testoutput::
 
    Predicted ...
@@ -158,7 +158,7 @@ Let's start our python program. Matplotlib is used for the graphs to show traini
 .. code-block:: python
 
    #!/usr/bin/env python
-   
+
    import matplotlib
    matplotlib.use('Agg')
 
@@ -172,9 +172,9 @@ Typical imports for a Chainer program. :mod:`~chainer.links` contain trainable p
    from chainer import training
    from chainer import datasets
    from chainer.training import extensions
-   
+
    import numpy as np
-   
+
 Trainer Structure
 ~~~~~~~~~~~~~~~~~
 
@@ -196,7 +196,7 @@ Our first step is to format the :mod:`~chainer.datasets`. From the raw mushrooms
        'mushrooms.csv', delimiter=',', dtype=str, skip_header=1)
    for col in range(data_array.shape[1]):
        data_array[:, col] = np.unique(data_array[:, col], return_inverse=True)[1]
-   
+
    X = data_array[:, 1:].astype(np.float32)
    Y = data_array[:, 0].astype(np.int32)[:, None]
    train, test = datasets.split_dataset_random(
@@ -226,7 +226,7 @@ As an activation function, we'll use standard Rectified Linear Units (:func:`~ch
 
    # Network definition
    class MLP(chainer.Chain):
-   
+
        def __init__(self, n_units, n_out):
            super(MLP, self).__init__()
            with self.init_scope():
@@ -234,18 +234,18 @@ As an activation function, we'll use standard Rectified Linear Units (:func:`~ch
                self.l1 = L.Linear(n_units)  # n_in -> n_units
                self.l2 = L.Linear(n_units)  # n_units -> n_units
                self.l3 = L.Linear(n_out)  # n_units -> n_out
-   
+
        def __call__(self, x):
            h1 = F.relu(self.l1(x))
            h2 = F.relu(self.l2(h1))
            return self.l3(h2)
-   
+
 Since mushrooms are either edible or poisonous (no information on psychedelic effects!) in the dataset, we'll use a Link :class:`~chainer.links.Classifier` for the output, with 44 units (double the features of the data) in the hidden layers and a single true/false category for classification.
-   
+
 .. code-block:: python
 
-     model = L.Classifier(
-         MLP(44, 1), lossfun=F.sigmoid_cross_entropy, accfun=F.binary_accuracy)
+   model = L.Classifier(
+       MLP(44, 1), lossfun=F.sigmoid_cross_entropy, accfun=F.binary_accuracy)
 
 Optimizer
 ~~~~~~~~~~~~
@@ -258,7 +258,7 @@ Pick an :class:`~chainer.Optimizer`, and set up the ``model`` to use it.
    # Setup an optimizer
    optimizer = chainer.optimizers.SGD()
    optimizer.setup(model)
-   
+
 Updater
 ~~~~~~~~~
 .. image:: ../image/glance/trainer-updater.png
@@ -269,14 +269,14 @@ Now that we have the training :class:`~chainer.iterator` and :class:`~chainer.op
 
    # Create the updater, using the optimizer
    updater = training.StandardUpdater(train_iter, optimizer, device=-1)
-   
+
 Set up the :class:`~chainer.updater` to be called after the training batches and set the number of batches per epoch to 100. The learning rate per epoch will be output to the directory ``result``.
 
 .. code-block:: python
 
    # Set up a trainer
    trainer = training.Trainer(updater, (50, 'epoch'), out='result')
-   
+
 Extensions
 ~~~~~~~~~~
 .. image:: ../image/glance/trainer-extensions.png
@@ -288,38 +288,38 @@ If using a GPU instead of the CPU, set ``device`` to the ID of the GPU, usually 
 .. code-block:: python
 
    trainer.extend(extensions.Evaluator(test_iter, model, device=-1))
-   
+
 Save a computational graph from ``loss`` variable at the first iteration. ``main`` refers to the target link of the ``main`` :class:`~chainer.Optimizer`. The graph is saved in the `Graphviz's <https://www.graphviz.org/>`_ dot format. The output location (directory) to save the graph is set by the ``out`` argument of :class:`~chainer.training.Trainer`.
 
 .. code-block:: python
 
    trainer.extend(extensions.dump_graph('main/loss'))
-   
+
 Take a snapshot of the ``trainer`` object every 20 epochs.
 
 .. code-block:: python
 
    trainer.extend(extensions.snapshot(), trigger=(20, 'epoch'))
-   
+
 Write a log of evaluation statistics for each epoch.
 
 .. code-block:: python
 
    trainer.extend(extensions.LogReport())
-   
+
 Save two plot images to the result directory.
 
 .. code-block:: python
 
    if extensions.PlotReport.available():
        trainer.extend(
-   	extensions.PlotReport(['main/loss', 'validation/main/loss'],
-   			      'epoch', file_name='loss.png'))
+       extensions.PlotReport(['main/loss', 'validation/main/loss'],
+                     'epoch', file_name='loss.png'))
        trainer.extend(
-   	extensions.PlotReport(
-   	    ['main/accuracy', 'validation/main/accuracy'],
-   	    'epoch', file_name='accuracy.png'))
-   
+       extensions.PlotReport(
+           ['main/accuracy', 'validation/main/accuracy'],
+           'epoch', file_name='accuracy.png'))
+
 Print selected entries of the log to standard output.
 
 .. code-block:: python
@@ -327,13 +327,13 @@ Print selected entries of the log to standard output.
    trainer.extend(extensions.PrintReport(
        ['epoch', 'main/loss', 'validation/main/loss',
         'main/accuracy', 'validation/main/accuracy', 'elapsed_time']))
-   
+
 Run the training.
 
 .. code-block:: python
 
    trainer.run()
-   
+
 Inference
 ~~~~~~~~~
 
@@ -410,7 +410,7 @@ Output for this instance will look like:
    49          0.0634615   0.0762576             0.983333       0.974947                  28.3876       
    50          0.0622394   0.0710278             0.982321       0.981747                  28.9067       
    Predicted Edible Actual Edible
-      
+
 Our prediction was correct. Success!
 
 The loss function:
