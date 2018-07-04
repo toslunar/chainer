@@ -188,7 +188,7 @@ Dataset
 ~~~~~~~
 .. image:: ../image/glance/trainer-dataset.png
 
-Our first step is to format the :ref:`dataset`. From the raw mushrooms.csv, we format the data into a Chainer :class:`~chainer.datasets.TupleDataset`.
+Our first step is to format the :mod:`~chainer.dataset`. From the raw mushrooms.csv, we format the data into a Chainer :class:`~chainer.datasets.TupleDataset`.
 
 .. code-block:: python
 
