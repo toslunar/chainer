@@ -270,7 +270,7 @@ Now that we have the training :class:`iterator <chainer.dataset.Iterator>` and :
    # Create the updater, using the optimizer
    updater = training.StandardUpdater(train_iter, optimizer, device=-1)
 
-Set up the :class:`~chainer.training.Updater` to be called after the training batches and set the number of batches per epoch to 100. The learning rate per epoch will be output to the directory ``result``.
+Set up the :class:`updater <chainer.training.Updater>` to be called after the training batches and set the number of batches per epoch to 100. The learning rate per epoch will be output to the directory ``result``.
 
 .. code-block:: python
 
@@ -281,7 +281,7 @@ Extensions
 ~~~~~~~~~~
 .. image:: ../image/glance/trainer-extensions.png
 
-Use the testing :class:`~chainer.dataset.Iterator` defined above for an :class:`~chainer.training.extensions.Evaluator` extension to the trainer to provide test scores.
+Use the testing :class:`iterator <chainer.dataset.Iterator>` defined above for an :class:`~chainer.training.extensions.Evaluator` extension to the trainer to provide test scores.
 
 If using a GPU instead of the CPU, set ``device`` to the ID of the GPU, usually ``0``.
 
@@ -289,7 +289,7 @@ If using a GPU instead of the CPU, set ``device`` to the ID of the GPU, usually 
 
    trainer.extend(extensions.Evaluator(test_iter, model, device=-1))
 
-Save a computational graph from ``loss`` variable at the first iteration. ``main`` refers to the target link of the ``main`` :class:`optimizer <chainer.optimizer>`. The graph is saved in the `Graphviz's <https://www.graphviz.org/>`_ dot format. The output location (directory) to save the graph is set by the ``out`` argument of :class:`~chainer.training.Trainer`.
+Save a computational graph from ``loss`` variable at the first iteration. ``main`` refers to the target link of the ``main`` :class:`optimizer <chainer.Optimizer>`. The graph is saved in the `Graphviz's <https://www.graphviz.org/>`_ dot format. The output location (directory) to save the graph is set by the ``out`` argument of :class:`trainer <chainer.training.Trainer>`.
 
 .. code-block:: python
 
