@@ -178,17 +178,17 @@ Typical imports for a Chainer program. :mod:`chainer.links` contain trainable pa
 Trainer Structure
 ~~~~~~~~~~~~~~~~~
 
-A :class:`~chainer.training.Trainer` is used to set up our neural network and data for training. The components of the :class:`~chainer.training.Trainer` are generally hierarchical, and are organized as follows:
+A :class:`trainer <chainer.training.Trainer>` is used to set up our neural network and data for training. The components of the :class:`trainer <chainer.training.Trainer>` are generally hierarchical, and are organized as follows:
 
 .. image:: ../image/glance/trainer.png
 
-Each of the components is fed information from the components within it. Setting up the trainer starts at the inner components, and moves outward, with the exception of :mod:`~chainer.training.extensions`, which are added after the :class:`~chainer.training.Trainer` is defined.
+Each of the components is fed information from the components within it. Setting up the trainer starts at the inner components, and moves outward, with the exception of :ref:`extensions <extensions>`, which are added after the :class:`trainer <chainer.training.Trainer>` is defined.
 
 Dataset
 ~~~~~~~
 .. image:: ../image/glance/trainer-dataset.png
 
-Our first step is to format the :mod:`~chainer.datasets`. From the raw mushrooms.csv, we format the data into a Chainer :class:`~chainer.datasets.TupleDataset`.
+Our first step is to format the :ref:`dataset`. From the raw mushrooms.csv, we format the data into a Chainer :class:`~chainer.datasets.TupleDataset`.
 
 .. code-block:: python
 
@@ -251,7 +251,7 @@ Optimizer
 ~~~~~~~~~~~~
 .. image:: ../image/glance/trainer-optimizer.png
 
-Pick an :class:`~chainer.Optimizer`, and set up the ``model`` to use it.
+Pick an :class:`optimizer <chainer.Optimizer>`, and set up the ``model`` to use it.
 
 .. code-block:: python
 
@@ -263,7 +263,7 @@ Updater
 ~~~~~~~~~
 .. image:: ../image/glance/trainer-updater.png
 
-Now that we have the training :class:`~chainer.dataset.Iterator` and :class:`~chainer.Optimizer` set up, we link them both together into the :class:`~chainer.training.Updater`. The :class:`~chainer.training.Updater` uses the minibatches from the :class:`~chainer.dataset.Iterator`, and then does the forward and backward processing of the model, and updates the parameters of the model according to the :class:`~chainer.Optimizer`. Setting the ``device=-1`` sets the device as the CPU. To use a GPU, set ``device`` equal to the number of the GPU, usually ``device=0``.
+Now that we have the training :class:`iterator <chainer.dataset.Iterator>` and :class:`optimizer <chainer.Optimizer>` set up, we link them both together into the :class:`updater <chainer.training.Updater>`. The :class:`updater <chainer.training.Updater>` uses the minibatches from the :class:`iterator <chainer.dataset.Iterator>`, and then does the forward and backward processing of the model, and updates the parameters of the model according to the :class:`optimizer <chainer.Optimizer>`. Setting the ``device=-1`` sets the device as the CPU. To use a GPU, set ``device`` equal to the number of the GPU, usually ``device=0``.
 
 .. code-block:: python
 
@@ -289,13 +289,13 @@ If using a GPU instead of the CPU, set ``device`` to the ID of the GPU, usually 
 
    trainer.extend(extensions.Evaluator(test_iter, model, device=-1))
 
-Save a computational graph from ``loss`` variable at the first iteration. ``main`` refers to the target link of the ``main`` :class:`~chainer.Optimizer`. The graph is saved in the `Graphviz's <https://www.graphviz.org/>`_ dot format. The output location (directory) to save the graph is set by the ``out`` argument of :class:`~chainer.training.Trainer`.
+Save a computational graph from ``loss`` variable at the first iteration. ``main`` refers to the target link of the ``main`` :class:`optimizer <chainer.optimizer>`. The graph is saved in the `Graphviz's <https://www.graphviz.org/>`_ dot format. The output location (directory) to save the graph is set by the ``out`` argument of :class:`~chainer.training.Trainer`.
 
 .. code-block:: python
 
    trainer.extend(extensions.dump_graph('main/loss'))
 
-Take a snapshot of the :class:`~chainer.training.Trainer` object every 20 epochs.
+Take a snapshot of the :class:`trainer <chainer.training.Trainer>` object every 20 epochs.
 
 .. code-block:: python
 
