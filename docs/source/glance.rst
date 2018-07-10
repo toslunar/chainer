@@ -142,6 +142,7 @@ Here's the whole picture of the code:
       print('Predicted Edible, Actual ' + ['Edible', 'Poisonous'][t[0]])
 
 .. testoutput::
+    :hide:
 
    Predicted ...
 
@@ -314,7 +315,7 @@ Save two plot images to the result directory.
    if extensions.PlotReport.available():
        trainer.extend(
        extensions.PlotReport(['main/loss', 'validation/main/loss'],
-                     'epoch', file_name='loss.png'))
+                             'epoch', file_name='loss.png'))
        trainer.extend(
        extensions.PlotReport(
            ['main/accuracy', 'validation/main/accuracy'],
