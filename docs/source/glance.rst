@@ -26,7 +26,7 @@ Full Code
 
 Here's the whole picture of the code:
 
-.. testcode::
+.. code-block:: python
 
    import matplotlib
    matplotlib.use('Agg')
@@ -41,13 +41,6 @@ Here's the whole picture of the code:
    import numpy as np
 
    mushroomsfile = 'mushrooms.csv'
-
-.. testcode::
-   :hide:
-
-   mushroomsfile = 'source/mushrooms.csv'
-
-.. testcode::
 
    data_array = np.genfromtxt(
        mushroomsfile, delimiter=',', dtype=str, skip_header=1)
@@ -92,14 +85,6 @@ Here's the whole picture of the code:
    # Set up a trainer
    trainer = training.Trainer(updater, (50, 'epoch'), out='result')
 
-.. testcode::
-   :hide:
-
-   # Shortcut for doctests.
-   trainer = training.Trainer(updater, (1, 'epoch'), out='result')
-
-.. testcode::
-
    # Evaluate the model with the test dataset for each epoch
    trainer.extend(extensions.Evaluator(test_iter, model, device=-1))
 
@@ -140,11 +125,6 @@ Here's the whole picture of the code:
    else:
        print('Predicted Edible, Actual ' + ['Edible', 'Poisonous'][t[0]])
 
-.. testoutput::
-   :hide:
-
-   Predicted ...
-
 If you've worked with other neural net frameworks, some of that code may look familiar. Let's break down what it's doing.
 
 Code Breakdown
@@ -155,14 +135,14 @@ Initialization
 
 Let's start our python program. Matplotlib is used for the graphs to show training progress.
 
-.. code-block:: python
+.. testcode::
 
    import matplotlib
    matplotlib.use('Agg')
 
 Typical imports for a Chainer program. :mod:`chainer.links` contain trainable parameters and :mod:`chainer.functions` do not.
 
-.. code-block:: python
+.. testcode::
 
    import chainer
    import chainer.functions as F
@@ -188,10 +168,19 @@ Dataset
 
 Our first step is to format the :mod:`~chainer.dataset`. From the raw mushrooms.csv, we format the data into a Chainer :class:`~chainer.datasets.TupleDataset`.
 
-.. code-block:: python
+.. testcode::
 
+   mushroomsfile = 'mushrooms.csv'
+
+.. testcode::
+   :hide:
+
+   mushroomsfile = 'source/mushrooms.csv'
+
+.. testcode::
    data_array = np.genfromtxt(
-       'mushrooms.csv', delimiter=',', dtype=str, skip_header=1)
+       mushroomsfile, delimiter=',', dtype=str, skip_header=1)
+
    for col in range(data_array.shape[1]):
        data_array[:, col] = np.unique(data_array[:, col], return_inverse=True)[1]
 
@@ -206,7 +195,7 @@ Iterator
 
 Configure :mod:`~chainer.iterators` to step through batches of the data for training and for testing validation. In this case, we'll use a batch size of 100, no repeating, and shuffling not required since we already shuffled the dataset on reading it in.
 
-.. code-block:: python
+.. testcode::
 
    train_iter = chainer.iterators.SerialIterator(train, 100)
    test_iter = chainer.iterators.SerialIterator(
@@ -220,7 +209,7 @@ Next, we need to define the neural network for inclusion in our model. For our m
 
 As an activation function, we'll use standard Rectified Linear Units (:func:`~chainer.functions.relu`).
 
-.. code-block:: python
+.. testcode::
 
    # Network definition
    class MLP(chainer.Chain):
@@ -240,7 +229,7 @@ As an activation function, we'll use standard Rectified Linear Units (:func:`~ch
 
 Since mushrooms are either edible or poisonous (no information on psychedelic effects!) in the dataset, we'll use a Link :class:`~chainer.links.Classifier` for the output, with 44 units (double the features of the data) in the hidden layers and a single true/false category for classification.
 
-.. code-block:: python
+.. testcode::
 
    model = L.Classifier(
        MLP(44, 1), lossfun=F.sigmoid_cross_entropy, accfun=F.binary_accuracy)
@@ -251,7 +240,7 @@ Optimizer
 
 Pick an :class:`optimizer <chainer.Optimizer>`, and set up the ``model`` to use it.
 
-.. code-block:: python
+.. testcode::
 
    # Setup an optimizer
    optimizer = chainer.optimizers.SGD()
@@ -263,17 +252,23 @@ Updater
 
 Now that we have the training :class:`iterator <chainer.dataset.Iterator>` and :class:`optimizer <chainer.Optimizer>` set up, we link them both together into the :class:`updater <chainer.training.Updater>`. The :class:`updater <chainer.training.Updater>` uses the minibatches from the :class:`iterator <chainer.dataset.Iterator>`, and then does the forward and backward processing of the model, and updates the parameters of the model according to the :class:`optimizer <chainer.Optimizer>`. Setting the ``device=-1`` sets the device as the CPU. To use a GPU, set ``device`` equal to the number of the GPU, usually ``device=0``.
 
-.. code-block:: python
+.. testcode::
 
    # Create the updater, using the optimizer
    updater = training.StandardUpdater(train_iter, optimizer, device=-1)
 
 Set up the :class:`updater <chainer.training.Updater>` to be called after the training batches and set the number of batches per epoch to 100. The learning rate per epoch will be output to the directory ``result``.
 
-.. code-block:: python
+.. testcode::
 
    # Set up a trainer
    trainer = training.Trainer(updater, (50, 'epoch'), out='result')
+
+.. testcode::
+   :hide:
+
+   # Shortcut for doctests.
+   trainer = training.Trainer(updater, (1, 'epoch'), out='result')
 
 Extensions
 ~~~~~~~~~~
@@ -283,31 +278,31 @@ Use the testing :class:`iterator <chainer.dataset.Iterator>` defined above for a
 
 If using a GPU instead of the CPU, set ``device`` to the ID of the GPU, usually ``0``.
 
-.. code-block:: python
+.. testcode::
 
    trainer.extend(extensions.Evaluator(test_iter, model, device=-1))
 
 Save a computational graph from ``loss`` variable at the first iteration. ``main`` refers to the target link of the ``main`` :class:`optimizer <chainer.Optimizer>`. The graph is saved in the `Graphviz's <https://www.graphviz.org/>`_ dot format. The output location (directory) to save the graph is set by the ``out`` argument of :class:`trainer <chainer.training.Trainer>`.
 
-.. code-block:: python
+.. testcode::
 
    trainer.extend(extensions.dump_graph('main/loss'))
 
 Take a snapshot of the :class:`trainer <chainer.training.Trainer>` object every 20 epochs.
 
-.. code-block:: python
+.. testcode::
 
    trainer.extend(extensions.snapshot(), trigger=(20, 'epoch'))
 
 Write a log of evaluation statistics for each epoch.
 
-.. code-block:: python
+.. testcode::
 
    trainer.extend(extensions.LogReport())
 
 Save two plot images to the result directory.
 
-.. code-block:: python
+.. testcode::
 
    if extensions.PlotReport.available():
        trainer.extend(
@@ -320,7 +315,7 @@ Save two plot images to the result directory.
 
 Print selected entries of the log to standard output.
 
-.. code-block:: python
+.. testcode::
 
    trainer.extend(extensions.PrintReport(
        ['epoch', 'main/loss', 'validation/main/loss',
@@ -328,7 +323,7 @@ Print selected entries of the log to standard output.
 
 Run the training.
 
-.. code-block:: python
+.. testcode::
 
    trainer.run()
 
@@ -337,7 +332,7 @@ Inference
 
 Once the training is complete, only the model is necessary to make predictions. Let's check that a random line from the test data set and see if the inference is correct:
 
-.. code-block:: python
+.. testcode::
 
    x, t = test[np.random.randint(len(test))]
 
@@ -348,6 +343,11 @@ Once the training is complete, only the model is necessary to make predictions. 
        print('Predicted Poisonous, Actual ' + ['Edible', 'Poisonous'][t[0]])
    else:
        print('Predicted Edible, Actual ' + ['Edible', 'Poisonous'][t[0]])
+
+.. testoutput::
+   :hide:
+
+   Predicted ...
 
 Output
 -------
