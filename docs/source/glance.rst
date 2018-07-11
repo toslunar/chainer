@@ -66,6 +66,7 @@ Here's the whole picture of the code:
 
    # Network definition
    class MLP(chainer.Chain):
+
        def __init__(self, n_units, n_out):
            super(MLP, self).__init__()
            with self.init_scope():
@@ -137,9 +138,9 @@ Here's the whole picture of the code:
    predict = predict[0][0]
 
    if predict >= 0:
-      print('Predicted Poisonous, Actual ' + ['Edible', 'Poisonous'][t[0]])
+       print('Predicted Poisonous, Actual ' + ['Edible', 'Poisonous'][t[0]])
    else:
-      print('Predicted Edible, Actual ' + ['Edible', 'Poisonous'][t[0]])
+       print('Predicted Edible, Actual ' + ['Edible', 'Poisonous'][t[0]])
 
 .. testoutput::
    :hide:
@@ -158,8 +159,6 @@ Let's start our python program. Matplotlib is used for the graphs to show traini
 
 .. code-block:: python
 
-   #!/usr/bin/env python
-
    import matplotlib
    matplotlib.use('Agg')
 
@@ -170,8 +169,8 @@ Typical imports for a Chainer program. :mod:`chainer.links` contain trainable pa
    import chainer
    import chainer.functions as F
    import chainer.links as L
-   from chainer import training
    from chainer import datasets
+   from chainer import training
    from chainer.training import extensions
 
    import numpy as np
@@ -314,8 +313,8 @@ Save two plot images to the result directory.
 
    if extensions.PlotReport.available():
        trainer.extend(
-       extensions.PlotReport(['main/loss', 'validation/main/loss'],
-                             'epoch', file_name='loss.png'))
+           extensions.PlotReport(['main/loss', 'validation/main/loss'],
+                                 'epoch', file_name='loss.png'))
        trainer.extend(
        extensions.PlotReport(
            ['main/accuracy', 'validation/main/accuracy'],
@@ -342,15 +341,15 @@ Once the training is complete, only the model is necessary to make predictions. 
 
 .. code-block:: python
 
-    x, t = test[np.random.randint(len(test))]
+   x, t = test[np.random.randint(len(test))]
 
-    predict = model.predictor(x[None]).data
-    predict = predict[0][0]
+   predict = model.predictor(x[None]).data
+   predict = predict[0][0]
 
-    if predict >= 0:
-        print('Predicted Poisonous, Actual ' + ['Edible', 'Poisonous'][t[0]])
-    else:
-        print('Predicted Edible, Actual ' + ['Edible', 'Poisonous'][t[0]])
+   if predict >= 0:
+       print('Predicted Poisonous, Actual ' + ['Edible', 'Poisonous'][t[0]])
+   else:
+       print('Predicted Edible, Actual ' + ['Edible', 'Poisonous'][t[0]])
 
 Output
 -------
