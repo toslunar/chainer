@@ -63,7 +63,6 @@ Here's the whole picture of the code:
    test_iter = chainer.iterators.SerialIterator(
        test, 100, repeat=False, shuffle=False)
 
-
    # Network definition
    class MLP(chainer.Chain):
 
@@ -79,7 +78,6 @@ Here's the whole picture of the code:
            h1 = F.relu(self.l1(x))
            h2 = F.relu(self.l2(h1))
            return self.l3(h2)
-
 
    model = L.Classifier(
        MLP(44, 1), lossfun=F.sigmoid_cross_entropy, accfun=F.binary_accuracy)
@@ -316,9 +314,9 @@ Save two plot images to the result directory.
            extensions.PlotReport(['main/loss', 'validation/main/loss'],
                                  'epoch', file_name='loss.png'))
        trainer.extend(
-       extensions.PlotReport(
-           ['main/accuracy', 'validation/main/accuracy'],
-           'epoch', file_name='accuracy.png'))
+           extensions.PlotReport(
+               ['main/accuracy', 'validation/main/accuracy'],
+               'epoch', file_name='accuracy.png'))
 
 Print selected entries of the log to standard output.
 
