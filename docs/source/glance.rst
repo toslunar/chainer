@@ -43,9 +43,9 @@ Here's the whole picture of the code:
    mushroomsfile = 'mushrooms.csv'
 
 .. testcode::
-    :hide:
+   :hide:
 
-    mushroomsfile = 'source/mushrooms.csv'
+   mushroomsfile = 'source/mushrooms.csv'
 
 .. testcode::
 
@@ -94,10 +94,10 @@ Here's the whole picture of the code:
    trainer = training.Trainer(updater, (50, 'epoch'), out='result')
 
 .. testcode::
-    :hide:
+   :hide:
 
-    # Shortcut for doctests.
-    trainer = training.Trainer(updater, (1, 'epoch'), out='result')
+   # Shortcut for doctests.
+   trainer = training.Trainer(updater, (1, 'epoch'), out='result')
 
 .. testcode::
 
@@ -142,7 +142,7 @@ Here's the whole picture of the code:
       print('Predicted Edible, Actual ' + ['Edible', 'Poisonous'][t[0]])
 
 .. testoutput::
-    :hide:
+   :hide:
 
    Predicted ...
 
