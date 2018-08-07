@@ -7,6 +7,7 @@ import numpy
 import six
 
 import chainer
+from chainer import _backprop_utils
 from chainer.backends import cuda
 from chainer import configuration
 from chainer import function_hook
@@ -43,9 +44,9 @@ class FunctionNode(object):
        instance of :class:`FunctionNode` taking only one argument.
        Then the following code
 
-       >>> import numpy, chainer, chainer.functions as F
+       >>> import numpy, chainer
        >>> x = chainer.Variable(numpy.zeros(10))
-       >>> f = F.Identity()
+       >>> f = chainer.functions.math.identity.Identity()
        >>> y = f.apply((x,))[0]
 
        computes a new variable ``y`` and creates backward references. The
@@ -55,7 +56,7 @@ class FunctionNode(object):
 
        If an application of another function ``g`` occurs as
 
-       >>> g = F.Identity()
+       >>> g = chainer.functions.math.identity.Identity()
        >>> z = g.apply((x,))[0]
 
        then the graph grows with a branch::
@@ -126,6 +127,7 @@ class FunctionNode(object):
     _output_indexes_to_retain = None
     _retained_output_data = None
     _local_function_hooks = None
+    lazy_grad_sum = False
 
     @property
     def local_function_hooks(self):
@@ -224,10 +226,10 @@ Use apply() method instead.\
 
         # Check for input array types
         if not chainer.is_arrays_compatible(in_data):
-            raise ValueError(
+            raise TypeError(
                 'incompatible array types are mixed in the forward input '
                 '({}).\n'
-                '{}'.format(
+                'Actual: {}'.format(
                     self.label,
                     ', '.join(str(type(x)) for x in in_data)))
 
@@ -261,10 +263,10 @@ Use apply() method instead.\
                 'Actual: {}'.format(self.label, type(outputs)))
 
         if not chainer.is_arrays_compatible(outputs):
-            raise ValueError(
+            raise TypeError(
                 'incompatible array types are mixed in the forward output '
                 '({}).\n'
-                '{}'.format(
+                'Actual: {}'.format(
                     self.label,
                     ', '.join(str(type(x)) for x in outputs)))
 
@@ -303,6 +305,8 @@ Use apply() method instead.\
                     ret[index].retain_data()
                     retained_data.append(outputs[index])
                 self._retained_output_data = tuple(retained_data)
+
+            self.lazy_grad_sum = configuration.config.lazy_grad_sum
 
         return ret
 
@@ -467,9 +471,9 @@ Use apply() method instead.\
         function is not differentiable.
 
         Args:
-            target_input_indexes (tuple of int): Indices of the input variables
-                w.r.t. which the gradients are required. It is guaranteed that
-                this tuple contains at least one element.
+            target_input_indexes (tuple of int): Sorted indices of the input
+                variables w.r.t. which the gradients are required. It is
+                guaranteed that this tuple contains at least one element.
             grad_outputs (tuple of :class:`~chainer.Variable`\\ s): Gradients
                 w.r.t. the output variables.
                 If the gradient w.r.t. an output variable is not
@@ -504,9 +508,9 @@ Use apply() method instead.\
         if you do not need to provide efficient gradient accumulation.
 
         Args:
-            target_input_indexes (tuple of int): Indices of the input variables
-                w.r.t. which the gradients are required. It is guaranteed that
-                this tuple contains at least one element.
+            target_input_indexes (tuple of int): Sorted indices of the input
+                variables w.r.t. which the gradients are required. It is
+                guaranteed that this tuple contains at least one element.
             grad_outputs (tuple of Variable): Gradients w.r.t. the output
                 variables. If the gradient w.r.t. an output variable is not
                 given, the corresponding element is ``None``.
@@ -523,21 +527,26 @@ Use apply() method instead.\
 
         .. note::
 
-           When the same variable is passed to the multiple input arguments of
-           a function, only the first position of ``grad_inputs`` corresponding
-           to these input arguments may contain the gradient variable
-           corresponding to that input variable, and other entries are set to
-           ``None``. This is an implementation-detail convention to avoid the
+           Gradient variables in ``grad_outputs`` are distinct, even if a
+           variable is passed to multiple input arguments of the function.
+           This is an implementation-detail convention to avoid the
            complication of correctly accumulating gradients in such a case.
+
+           Usually, only the first position of ``grad_inputs`` corresponding to
+           these input arguments may contain the gradient variable
+           corresponding to that input variable, and other entries are set to
+           ``None``. This is not the case with the ``lazy_grad_sum`` feature.
            This behavior might be changed in a future version.
 
         """
+        # If backward_accumulate is implemented, it should be equivalent to
+        # the following code using backward(). This code is provided for the
+        # convenience, and it's *not* used unless you override it. You don't
+        # have to use backward().
         assert isinstance(target_input_indexes, tuple)
         assert isinstance(grad_outputs, tuple)
         assert isinstance(grad_inputs, tuple)
 
-        # The default implementation uses backward(). You can override this
-        # method without using backward().
         gxs = self.backward(target_input_indexes, grad_outputs)
 
         is_debug = chainer.is_debug()
@@ -798,6 +807,12 @@ def grad(outputs, inputs, grad_outputs=None, grad_inputs=None, set_grad=False,
         raise TypeError(
             'grad_inputs must be a tuple or a list or None, not {}.'.format(
                 type(grad_inputs)))
+
+    for v in outputs:
+        # Raise error here if v is created by Function.backward.
+        # In such case, we don't know exact inputs of the creator.
+        v.node._check_old_style_gradient()
+
     # The implementation consists of three steps.
 
     # 1. Backward enumeration: all the nodes reachable backward from the output
@@ -814,6 +829,10 @@ def grad(outputs, inputs, grad_outputs=None, grad_inputs=None, set_grad=False,
             continue
         visited_funcs.add(func)
         for x in func.inputs:
+            # Raise error here if x is created by Function.backward.
+            # In such case, we don't know exact inputs of the creator.
+            x._check_old_style_gradient()
+
             if not x.requires_grad:
                 continue
             forward_graph[x].append(func)
@@ -842,7 +861,7 @@ def grad(outputs, inputs, grad_outputs=None, grad_inputs=None, set_grad=False,
     # 3. Backpropagation: the backpropagation is executed along the
     #    (sub-)subgraph. It uses the topological order of the subgraph which is
     #    induced by the reversed order of function applications ("rank").
-    grads = {}  # mapping from variable nodes to their gradients
+    grads = _backprop_utils.GradTable()
 
     # Initialize the gradient mapping.
     if grad_outputs is None:
@@ -867,11 +886,11 @@ def grad(outputs, inputs, grad_outputs=None, grad_inputs=None, set_grad=False,
     # Backprop implementation. It edits grads which will only contain the
     # gradients w.r.t. the inputs.
     with chainer.using_config('enable_backprop', enable_double_backprop):
-        _backprop(outputs, inputs, grad_required, retain_grad, grads,
-                  loss_scale)
+        ret_dict = _backprop(
+            outputs, inputs, grad_required, retain_grad, grads, loss_scale)
 
     # Extract the gradients w.r.t. the inputs and return them.
-    ret = [grads.get(x.node, None) for x in inputs]
+    ret = [ret_dict[x.node] for x in inputs]
     if set_grad:
         for x, gx in zip(inputs, ret):
             x.grad_var = gx
@@ -888,82 +907,75 @@ def _backprop(outputs, inputs, grad_required, retain_grad, grads, loss_scale):
             push_candidate(creator)
 
     input_nodes = set(x.node for x in inputs)
+    ret_dict = {}
 
     while candidate_funcs:
         func = pop_candidate()
 
         # Collect the gradients w.r.t. the outputs
-        gys = []
-        for y_ref in func.outputs:
-            y = y_ref()
-            if y is None:
-                # output is not a part of the selected subgraph and has already
-                # been released.
-                gys.append(None)
-                continue
-            gys.append(grads.get(y, None))
-        gys = tuple(gys)
+        ys = [y() for y in func.outputs]  # access via weak ref
+        gys = tuple([grads.pop(y) for y in ys])
+
+        for node, gy in six.moves.zip(ys, gys):
+            if node is not None:
+                if node in input_nodes:
+                    ret_dict[node] = gy
+
+                if retain_grad:
+                    y = node.get_variable_or_none()
+                    if y is not None:
+                        y.grad_var = gy
+                        y._loss_scale = loss_scale
 
         # Collect the gradients w.r.t. the inputs
-        #
-        # Note (Tokui): when the same variable is passed multiple times as
-        # inputs in the same function (e.g. an expression like f(x, x)), the
-        # current implementation passes None as the current gradient w.r.t.
-        # such an input except for the first one (i.e., it builds gxs like
-        # (gx, None) where gx is the current gradient w.r.t. x).
-        gxs = []
         input_indexes = []
-        selected_inputs = set()
+        x_grads = collections.OrderedDict()
         for i, x in enumerate(func.inputs):
             if x not in grad_required:
                 continue
             input_indexes.append(i)
-            if x in selected_inputs:
-                gxs.append(None)
-            else:
-                gxs.append(grads.get(x, None))
-                selected_inputs.add(x)
-        gxs = tuple(gxs)
-        input_indexes = tuple(input_indexes)
-
+            if x not in x_grads:
+                x_grads[x] = grads.get_as_list(x)
         if not input_indexes:
             continue
+        input_indexes = tuple(input_indexes)
 
         # Do backward
-        new_gxs = func.backward_accumulate(input_indexes, gys, gxs)
 
-        # Delete output gradients that are not required to return
-        for y_ref in func.outputs:
-            y = y_ref()
-            if y is not None and y in grads and y not in input_nodes:
-                del grads[y]
+        # Call pre-backward hooks
+        hooks = chainer.get_function_hooks()
+        if func._n_local_function_hooks != 0:
+            hooks = collections.OrderedDict(hooks)
+            hooks.update(func.local_function_hooks)
+        hooks = hooks.values()  # avoid six for performance
+
+        in_data = tuple([x.data for x in func.inputs])
+        out_grad_data = tuple(
+            [None if g is None else g.data for g in gys])
+        cuda.get_device_from_array(*in_data).use()
+
+        for hook in hooks:
+            hook.backward_preprocess(func, in_data, out_grad_data)
+
+        _backprop_utils.backprop_step(func, input_indexes, gys, x_grads)
+
+        # Call post-backward hooks
+        for hook in hooks:
+            hook.backward_postprocess(func, in_data, out_grad_data)
 
         # Update grads
-        selected_inputs = set()
-        for i, g in zip(input_indexes, new_gxs):
-            if g is None:
+        for node, g in x_grads.items():
+            if not g:  # gradient == None
                 continue
-
-            node = func.inputs[i]
-            if node in selected_inputs:
-                # Accumulate the duplicated gradients here
-                cur_gx = grads.get(node, None)
-                if cur_gx is not None:
-                    g = g + cur_gx
-            else:
-                selected_inputs.add(node)
-
-            grads[node] = g
-
-            if retain_grad:
-                v = node.get_variable_or_none()
-                if v is not None:
-                    v.grad_var = g
-                    v._loss_scale = loss_scale
 
             creator = node.creator_node
             if creator is not None:
                 push_candidate(creator)
+
+    for x in input_nodes:
+        if x not in ret_dict:
+            ret_dict[x] = grads.pop(x)
+    return ret_dict
 
 
 def _get_ordered_func_heap():
