@@ -114,6 +114,7 @@ def backprop_step(
     for i, gx in six.moves.zip(target_input_indexes, gxs):
         if gx is not None:
             grad_inputs[func.inputs[i]].append(gx)
+    del gxs  ##
 
     if not func.lazy_grad_sum:
         for gx in grad_inputs.values():

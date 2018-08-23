@@ -1009,10 +1009,10 @@ Actual: {0}'''.format(type(data))
             target_input_indexes = tuple([
                 i for i, x in enumerate(inputs) if x.requires_grad
             ])
-            outputs = [y() for y in func.outputs]  # access via weak ref
-            out_grad = tuple([grads.pop(y) for y in outputs])
             if not target_input_indexes:
                 continue
+            outputs = [y() for y in func.outputs]  # access via weak ref
+            out_grad = tuple([grads.pop(y) for y in outputs])
 
             in_data = tuple([x.data for x in inputs])
             out_grad_data = tuple(
@@ -1037,7 +1037,9 @@ Actual: {0}'''.format(type(data))
                 if x not in in_grad:
                     in_grad[x] = grads.get_as_list(x)
             del target_inputs  ##
+            del x  ##
 
+            ## print(locals().keys())
             _backprop_utils.backprop_step(
                 func, target_input_indexes, out_grad, in_grad)
             del target_input_indexes  ##
@@ -1093,7 +1095,6 @@ Actual: {0}'''.format(type(data))
             del in_grad  # to reduce memory usage
             if initial_device is not None:
                 initial_device.use()
-            ## print(locals().keys())
 
         for x in leaf_nodes:
             x_var = x.get_variable_or_none()
@@ -1101,6 +1102,8 @@ Actual: {0}'''.format(type(data))
             if x_var is not None:
                 x_var._grad_var = gx
                 x_var._loss_scale = loss_scale
+            ## else:
+            ##     print('orz')
         grads.assert_no_grads()
 
     def reshape(self, *shape):
