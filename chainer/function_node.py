@@ -677,6 +677,7 @@ def backward_all(args_list):
 
     grads = {}
     grads[output_node] = output_grad
+    output_node_id = id(output_node)
     del output_node
 
     is_debug = chainer.is_debug()
@@ -810,15 +811,15 @@ def backward_all(args_list):
                             'NaN is detected on backward computation of '
                             '{}'.format(func.label))
 
-        """
         if not retain_grad:
             for y in outputs:
-                if y is not None and y is not output_node:
-                    grads[y] = None
+                if y is not None and id(y) != output_node_id:
+                    # grads[y] = None
                     y_var = y.get_variable_or_none()
                     if y_var is not None:
                         y_var._grad_var = None
-        """
+                    del y_var
+            del y
 
         for i, gx in enumerate(gxs):
             if gx is None:
