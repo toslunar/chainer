@@ -1029,18 +1029,23 @@ Actual: {0}'''.format(type(data))
 
             # Collect the current input gradients.
             target_inputs = [inputs[i] for i in target_input_indexes]
+            del inputs  ##
             # Keep the order for the portability, rather than
             # in_grad = {x: grads.get_as_list(x) for x in set(target_inputs)}
             in_grad = collections.OrderedDict()
             for x in target_inputs:
                 if x not in in_grad:
                     in_grad[x] = grads.get_as_list(x)
+            del target_inputs  ##
 
             _backprop_utils.backprop_step(
                 func, target_input_indexes, out_grad, in_grad)
+            del target_input_indexes  ##
 
             for hook in hooks:
                 hook.backward_postprocess(func, in_data, out_grad_data)
+            del in_data  ##
+            del out_grad_data  ##
 
             if is_debug:
                 # each grad is a list of variables
@@ -1064,6 +1069,11 @@ Actual: {0}'''.format(type(data))
                     y_var = y.get_variable_or_none()
                     if y_var is not None:
                         y_var._grad_var = gy if retain_grad else None
+                    del y_var  ##
+            del outputs  ##
+            del out_grad  ##
+            del y  ##
+            del gy  ##
 
             for x, gx in in_grad.items():
                 if not gx:  # gradient == None
@@ -1071,15 +1081,19 @@ Actual: {0}'''.format(type(data))
 
                 for gx_elem in gx:
                     _check_grad_type(func, x, gx_elem.data)
+                del gx_elem  ##
 
                 if x.creator_node is None:  # leaf
                     leaf_nodes.add(x)
                 else:
                     add_cand(x.creator_node)
+            del x  ##
+            del gx  ##
 
             del in_grad  # to reduce memory usage
             if initial_device is not None:
                 initial_device.use()
+            ## print(locals().keys())
 
         for x in leaf_nodes:
             x_var = x.get_variable_or_none()
