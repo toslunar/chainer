@@ -1141,15 +1141,16 @@ def _backward_main(root_vars, retain_grad, loss_scale):
         y = y_var.node
         grads[y] = y_var.grad_var
         y_var.grad_var = None  # to reduce memory usage
-        y_var = None
 
         add_cand(y.creator_node)
         root_nodes.add(weakref.ref(y))
-        del y
 
     if len(root_nodes) != len(root_vars):
         raise ValueError('variables should be distinct')
-    del root_vars[:]  # remove references
+
+    # remove references
+    del root_vars[:]
+    y, y_var = None, None
 
     leaf_nodes = set()
 
@@ -1234,6 +1235,7 @@ def _backward_main(root_vars, retain_grad, loss_scale):
             else:
                 add_cand(x.creator_node)
         del gx, in_grad  # to reduce memory usage
+
         # remove references
         x, y, inputs, outputs = None, None, None, None
 
