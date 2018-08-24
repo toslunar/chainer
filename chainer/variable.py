@@ -1,4 +1,5 @@
 import collections
+import contextlib
 import copy
 import heapq
 import traceback
@@ -16,6 +17,24 @@ from chainer.backends import intel64
 from chainer import initializers
 from chainer.initializers import constant
 from chainer.utils import argument
+
+
+_delay_backward = False
+_delayed_backward_args = None
+
+
+@contextlib.contextmanager
+def delay_backward():
+    global _delay_backward, _delayed_backward_args
+    assert not _delay_backward
+    _delay_backward = True
+    _delayed_backward_args = ([], {})
+    yield
+    nodes, kwargs = _delayed_backward_args
+    enable_double_backprop = kwargs.pop('enable_double_backprop')
+    with chainer.using_config('enable_backprop', enable_double_backprop):
+        _backward_main(nodes, **kwargs)
+    _delay_backward = False
 
 
 def _check_grad_type(func, x, gx):
@@ -982,6 +1001,18 @@ Actual: {0}'''.format(type(data))
             if loss_scale is not None:
                 self.grad *= loss_scale
 
+        if _delay_backward:
+            _delayed_backward_args[0].append(self._node)
+            kwargs = dict(
+                retain_grad=retain_grad,
+                enable_double_backprop=enable_double_backprop,
+                loss_scale=loss_scale)
+            if _delayed_backward_args[1]:
+                if kwargs != _delayed_backward_args[1]:
+                    raise ValueError()
+            else:
+                _delayed_backward_args[1].update(kwargs)
+
         with chainer.using_config('enable_backprop', enable_double_backprop):
             _backward_main([self._node], retain_grad, loss_scale)
 
@@ -1089,7 +1120,7 @@ Actual: {0}'''.format(type(data))
     __hash__ = None
 
 
-def _backward_main(root_nodes, retain_grad, loss_scale):
+def _backward_main(nodes, retain_grad, loss_scale):
     is_debug = chainer.is_debug()
 
     cand_funcs = []
@@ -1097,16 +1128,19 @@ def _backward_main(root_nodes, retain_grad, loss_scale):
     grads = _backprop_utils.GradTable(load_if_new=True)
 
     def add_cand(cand):
-        if cand not in seen_set:
+        ref_cand = weakref.ref(cand)
+        if ref_cand not in seen_set:
             # Negate since heapq is min-heap
             heapq.heappush(cand_funcs, (-cand.rank, len(seen_set), cand))
-            seen_set.add(cand)
+            seen_set.add(ref_cand)
 
-    n = len(root_nodes)
-    for node in root_nodes:
+    n = len(nodes)
+    root_nodes = set()
+    for node in nodes:
         add_cand(node.creator_node)
-    root_nodes = set(root_nodes)
-    assert len(root_nodes) == n, 'root_nodes should be distinct'
+        root_nodes.add(weakref.ref(node))
+    assert len(root_nodes) == n, 'nodes should be distinct'
+    del nodes[:]
 
     leaf_nodes = set()
 
@@ -1171,7 +1205,7 @@ def _backward_main(root_nodes, retain_grad, loss_scale):
                                 'of {}'.format(func.label))
 
         for y, gy in six.moves.zip(outputs, out_grad):
-            if y is not None and y not in root_nodes:
+            if y is not None and weakref.ref(y) not in root_nodes:
                 y._set_grad_var_if_available(
                     gy if retain_grad else None)
         del gy, out_grad  # to reduce memory usage
