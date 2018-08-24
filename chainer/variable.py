@@ -1217,9 +1217,10 @@ def _backward_main(root_vars, retain_grad, loss_scale):
                                 'of {}'.format(func.label))
 
         for y, gy in six.moves.zip(outputs, out_grad):
-            if y is not None and weakref.ref(y) not in root_nodes:
+            if y is not None:
                 y._set_grad_var_if_available(
-                    gy if retain_grad else None)
+                    gy if retain_grad or weakref.ref(y) in root_nodes
+                    else None)
         del gy, out_grad  # to reduce memory usage
 
         for x, gx in in_grad.items():
