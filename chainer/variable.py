@@ -1153,8 +1153,6 @@ def _backward_main(root_vars, retain_grad, loss_scale):
     leaf_nodes = set()
 
     while cand_funcs:
-        # print([(k, type(v)) for k, v in locals().items()])
-        print(locals().keys())
         _, _, func = heapq.heappop(cand_funcs)
         inputs = func.inputs
         target_input_indexes = tuple([
@@ -1179,12 +1177,12 @@ def _backward_main(root_vars, retain_grad, loss_scale):
                 hook.backward_preprocess(func, in_data, out_grad_data)
 
             # Collect the current input gradients.
-            target_inputs = [inputs[i] for i in target_input_indexes]
             # Keep the order for the portability, rather than
-            # in_grad = {x: grads.get_as_list(x)
-            #            for x in set(target_inputs)}
+            # target_inputs = [inputs[i] for i in target_input_indexes]
+            # in_grad = {x: grads.get_as_list(x) for x in set(target_inputs)}
             in_grad = collections.OrderedDict()
-            for x in target_inputs:
+            for i in target_input_indexes:
+                x = inputs[i]
                 if x not in in_grad:
                     in_grad[x] = grads.get_as_list(x)
                     # to reduce memory usage
@@ -1195,6 +1193,8 @@ def _backward_main(root_vars, retain_grad, loss_scale):
 
             for hook in hooks:
                 hook.backward_postprocess(func, in_data, out_grad_data)
+
+        del in_data, out_grad_data
 
         if is_debug:
             # each grad is a list of variables
@@ -1233,6 +1233,11 @@ def _backward_main(root_vars, retain_grad, loss_scale):
             else:
                 add_cand(x.creator_node)
         del in_grad  # to reduce memory usage
+        x, gx, y, inputs, outputs = None, None, None, None, None
+        # print([(k, type(v)) for k, v in locals().items()])
+        # print(locals().keys())
+        # print([(k, type(v)) for k, v in locals().items() if v is not None])
+        print([k for k, v in locals().items() if v is not None])
 
     for x in leaf_nodes:
         x_var = x.get_variable_or_none()
