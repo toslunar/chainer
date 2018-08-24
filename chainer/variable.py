@@ -1126,7 +1126,6 @@ def _backward_main(root_vars, retain_grad, loss_scale):
 
     cand_funcs = []
     seen_set = set()
-    grads = _backprop_utils.GradTable(load_if_new=True)
 
     def add_cand(cand):
         ref_cand = weakref.ref(cand)
@@ -1135,7 +1134,8 @@ def _backward_main(root_vars, retain_grad, loss_scale):
             heapq.heappush(cand_funcs, (-cand.rank, len(seen_set), cand))
             seen_set.add(ref_cand)
 
-    n = len(root_vars)
+    grads = _backprop_utils.GradTable(load_if_new=True)
+
     root_nodes = set()
     for y_var in root_vars:
         y = y_var.node
@@ -1147,8 +1147,9 @@ def _backward_main(root_vars, retain_grad, loss_scale):
         root_nodes.add(weakref.ref(y))
         del y
 
-    assert len(root_nodes) == n, 'variables should be distinct'
-    del root_vars[:]
+    if len(root_nodes) != len(root_vars):
+        raise ValueError('variables should be distinct')
+    del root_vars[:]  # remove references
 
     leaf_nodes = set()
 
@@ -1233,11 +1234,8 @@ def _backward_main(root_vars, retain_grad, loss_scale):
             else:
                 add_cand(x.creator_node)
         del gx, in_grad  # to reduce memory usage
-        x, gx, y, inputs, outputs = None, None, None, None, None
-        # print([(k, type(v)) for k, v in locals().items()])
-        # print(locals().keys())
-        # print([(k, type(v)) for k, v in locals().items() if v is not None])
-        print([k for k, v in locals().items() if v is not None])
+        # remove references
+        x, y, inputs, outputs = None, None, None, None
 
     for x in leaf_nodes:
         x_var = x.get_variable_or_none()
