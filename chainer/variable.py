@@ -1012,6 +1012,7 @@ Actual: {0}'''.format(type(data))
                     raise ValueError()
             else:
                 _delayed_backward_args[1].update(kwargs)
+            return
 
         with chainer.using_config('enable_backprop', enable_double_backprop):
             _backward_main([self], retain_grad, loss_scale)
@@ -1138,14 +1139,22 @@ def _backward_main(root_vars, retain_grad, loss_scale):
     root_nodes = set()
     for y_var in root_vars:
         y = y_var.node
+        grads[y] = y_var.grad_var
+        y_var.grad_var = None  # to reduce memory usage
+        y_var = None
+
         add_cand(y.creator_node)
         root_nodes.add(weakref.ref(y))
-    assert len(root_nodes) == n, 'nodes should be distinct'
-    del nodes[:]
+        del y
+
+    assert len(root_nodes) == n, 'variables should be distinct'
+    del root_vars[:]
 
     leaf_nodes = set()
 
     while cand_funcs:
+        # print([(k, type(v)) for k, v in locals().items()])
+        print(locals().keys())
         _, _, func = heapq.heappop(cand_funcs)
         inputs = func.inputs
         target_input_indexes = tuple([
