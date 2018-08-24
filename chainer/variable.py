@@ -993,7 +993,6 @@ Actual: {0}'''.format(type(data))
                     self.grad = cuda.cupy.ones_like(self.data)
             if loss_scale is not None:
                 self.grad *= loss_scale
-        grads[self._node] = self._grad_var
 
         def add_cand(cand):
             if cand not in seen_set:
