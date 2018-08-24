@@ -1002,7 +1002,7 @@ Actual: {0}'''.format(type(data))
                 self.grad *= loss_scale
 
         if _delay_backward:
-            _delayed_backward_args[0].append(self._node)
+            _delayed_backward_args[0].append(self)
             kwargs = dict(
                 retain_grad=retain_grad,
                 enable_double_backprop=enable_double_backprop,
@@ -1014,7 +1014,7 @@ Actual: {0}'''.format(type(data))
                 _delayed_backward_args[1].update(kwargs)
 
         with chainer.using_config('enable_backprop', enable_double_backprop):
-            _backward_main([self._node], retain_grad, loss_scale)
+            _backward_main([self], retain_grad, loss_scale)
 
     def reshape(self, *shape):
         """Returns a variable of a different shape and the same content.
@@ -1120,7 +1120,7 @@ Actual: {0}'''.format(type(data))
     __hash__ = None
 
 
-def _backward_main(nodes, retain_grad, loss_scale):
+def _backward_main(root_vars, retain_grad, loss_scale):
     is_debug = chainer.is_debug()
 
     cand_funcs = []
@@ -1134,11 +1134,12 @@ def _backward_main(nodes, retain_grad, loss_scale):
             heapq.heappush(cand_funcs, (-cand.rank, len(seen_set), cand))
             seen_set.add(ref_cand)
 
-    n = len(nodes)
+    n = len(root_vars)
     root_nodes = set()
-    for node in nodes:
-        add_cand(node.creator_node)
-        root_nodes.add(weakref.ref(node))
+    for y_var in root_vars:
+        y = y_var.node
+        add_cand(y.creator_node)
+        root_nodes.add(weakref.ref(y))
     assert len(root_nodes) == n, 'nodes should be distinct'
     del nodes[:]
 
