@@ -1104,7 +1104,6 @@ def _backward_main(root_nodes, retain_grad, loss_scale):
 
     # TODO(kataoka): assert distinct
     for node in root_nodes:
-        grads[node] = node.grad_var
         add_cand(node.creator_node)
     leaf_nodes = set()
 
