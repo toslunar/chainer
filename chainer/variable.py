@@ -1150,31 +1150,17 @@ def _backward_main(outputs, retain_grad, loss_scale):
 
     # remove references
     del outputs[:]
-    y_var = None
+    y, y_var = None, None
 
-    leaf_nodes = set()
-
-    while cand_funcs:
-        # remove references
-        x, y, inputs, outputs = None, None, None, None
-        del x, y, inputs, outputs
-
-        _, _, func = heapq.heappop(cand_funcs)
+    def custom_backward(func):
         inputs = func.inputs
         target_input_indexes = tuple([
-            i
-            # TODO(kataoka): remove NOQA if flake8 is fixed
-            for i, x in enumerate(inputs)  # NOQA
-            if x.requires_grad
+            i for i, x in enumerate(inputs) if x.requires_grad
         ])
-        outputs = [
-            y()  # access via weak ref
-            # TODO(kataoka): remove NOQA if flake8 is fixed
-            for y in func.outputs  # NOQA
-        ]
+        outputs = [y() for y in func.outputs]  # access via weak ref
         out_grad = tuple([grads.pop(y) for y in outputs])
         if not target_input_indexes:
-            continue
+            return
 
         in_data = tuple([x.data for x in inputs])
         out_grad_data = tuple(
@@ -1247,6 +1233,12 @@ def _backward_main(outputs, retain_grad, loss_scale):
             else:
                 add_cand(x.creator_node)
         del gx, in_grad  # to reduce memory usage
+
+    leaf_nodes = set()
+
+    while cand_funcs:
+        _, _, func = heapq.heappop(cand_funcs)
+        custom_backward(func)
 
     for x in leaf_nodes:
         x_var = x.get_variable_or_none()
