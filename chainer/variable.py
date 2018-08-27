@@ -1124,16 +1124,7 @@ Actual: {0}'''.format(type(data))
 def _backward_main(outputs, retain_grad, loss_scale):
     is_debug = chainer.is_debug()
 
-    cand_funcs = []
-    seen_set = set()
-
-    def add_cand(cand):
-        ref_cand = weakref.ref(cand)
-        if ref_cand not in seen_set:
-            # Negate since heapq is min-heap
-            heapq.heappush(cand_funcs, (-cand.rank, len(seen_set), cand))
-            seen_set.add(ref_cand)
-
+    cand_funcs, push_cand, pop_cand = _get_ordered_func_heap()
     grads = _backprop_utils.GradTable(load_if_new=True)
 
     root_nodes = set()
@@ -1142,7 +1133,7 @@ def _backward_main(outputs, retain_grad, loss_scale):
         grads[y] = y_var.grad_var
         y_var.grad_var = None  # to reduce memory usage
 
-        add_cand(y.creator_node)
+        push_cand(y.creator_node)
         root_nodes.add(weakref.ref(y))
         del y, y_var  # remove references
 
@@ -1155,7 +1146,7 @@ def _backward_main(outputs, retain_grad, loss_scale):
     leaf_nodes = set()
 
     while cand_funcs:
-        _, _, func = heapq.heappop(cand_funcs)
+        func = pop_cand()
         inputs = func.inputs
         target_input_indexes = tuple([
             i for i, x in enumerate(inputs) if x.requires_grad
@@ -1234,7 +1225,7 @@ def _backward_main(outputs, retain_grad, loss_scale):
             if x.creator_node is None:  # leaf
                 leaf_nodes.add(x)
             else:
-                add_cand(x.creator_node)
+                push_cand(x.creator_node)
         del gx, in_grad  # to reduce memory usage
 
         # remove references
@@ -1247,6 +1238,25 @@ def _backward_main(outputs, retain_grad, loss_scale):
             x_var._grad_var = gx
             x_var._loss_scale = loss_scale
     grads.assert_no_grads()
+
+
+def _get_ordered_func_heap():
+    heap = []
+    seen_set = set()
+
+    def push_heap(func):
+        ref_func = weakref.ref(func)
+        if ref_func not in seen_set:
+            # Negate since heapq is min-heap
+            # The second element is used to make each item unique
+            heapq.heappush(heap, (-func.rank, len(seen_set), func))
+            seen_set.add(ref_func)
+
+    def pop_heap():
+        _, _, func = heapq.heappop(heap)
+        return func
+
+    return heap, push_heap, pop_heap
 
 
 class Parameter(Variable):
