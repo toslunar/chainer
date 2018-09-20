@@ -9,7 +9,7 @@ import numpy
 
 
 @testing.parameterize(*testing.product({
-    'shape': [(3, 2), (1,)],
+    'shape': [(2, 3), ()],
     'is_variable': [True, False],
     'sample_shape': [(3, 2), ()],
     'event_shape': [(3,)],
@@ -34,7 +34,7 @@ class TestMultivariateNormal(testing.distribution_unittest):
         loc = numpy.random.uniform(
             -1, 1, self.shape + self.event_shape).astype(numpy.float32)
         cov = numpy.random.normal(
-            size=(numpy.prod(self.shape),) + (d, d))
+            size=(int(numpy.prod(self.shape)),) + (d, d))
         cov = [cov_.dot(cov_.T) for cov_ in cov]
         cov = numpy.vstack(cov).reshape(self.shape + (d, d))
         scale_tril = numpy.linalg.cholesky(cov).astype(numpy.float32)
