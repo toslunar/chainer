@@ -1,8 +1,9 @@
+import numpy
+
 from chainer import cuda
 from chainer import distributions
 from chainer import testing
 from chainer.testing import array
-import numpy
 
 
 @testing.parameterize(*testing.product({
@@ -29,15 +30,15 @@ class TestCategorical(testing.distribution_unittest):
 
         if self.logit_option:
             if self.extreme_values:
-                logit = -numpy.inf \
-                    * numpy.ones((3,)+self.shape).astype(numpy.float32)
+                logit = numpy.full(
+                    (3,)+self.shape, -numpy.inf, dtype=numpy.float32)
                 logit[0] = 0.
                 logit = numpy.rollaxis(logit, 0, logit.ndim)
             else:
                 logit = numpy.random.normal(
                     size=self.shape+(3,)).astype(numpy.float32)
             p = numpy.exp(logit)
-            p /= numpy.expand_dims(p.sum(axis=-1), axis=-1)
+            p /= p.sum(axis=-1, keepdims=True)
             self.params = {"logit": logit}
         else:
             if self.extreme_values:
@@ -48,7 +49,7 @@ class TestCategorical(testing.distribution_unittest):
                 logit = numpy.random.normal(
                     size=self.shape+(3,)).astype(numpy.float32)
                 p = numpy.exp(logit)
-                p /= numpy.expand_dims(p.sum(axis=-1), axis=-1)
+                p /= p.sum(axis=-1, keepdims=True)
             self.params = {"p": p}
 
         n = numpy.ones(self.shape)
