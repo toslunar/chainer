@@ -11,7 +11,7 @@ def int_prod(shape):
 
 
 @testing.parameterize(*testing.product({
-    'shape': [(3, 2), (1,)],
+    'shape': [(3, 2), ()],
     'is_variable': [True, False],
     'sample_shape': [(3, 2), ()],
     # 'extreme_values': [True, False],
