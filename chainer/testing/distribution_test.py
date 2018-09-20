@@ -1,11 +1,12 @@
 import functools
 import unittest
 
+import numpy
+
 import chainer
 from chainer.backends import cuda
 from chainer.testing import array
 from chainer.testing import attr
-import numpy
 
 
 def skip_not_in_test_target(test_target):
@@ -19,6 +20,10 @@ def skip_not_in_test_target(test_target):
                 f(self, *args, **kwargs)
         return new_f
     return decorator
+
+
+def int_prod(shape):
+    return int(numpy.prod(shape))  # size
 
 
 class distribution_unittest(unittest.TestCase):
@@ -177,7 +182,7 @@ class distribution_unittest(unittest.TestCase):
 
         if self.scipy_onebyone:
             onebyone_smp = smp.reshape(*[
-                int(numpy.prod(sh))
+                int_prod(sh)
                 for sh in [self.sample_shape, self.shape, self.event_shape]])
             onebyone_smp = numpy.swapaxes(onebyone_smp, 0, 1)
             onebyone_smp = onebyone_smp.reshape((-1,) + self.sample_shape
@@ -187,7 +192,7 @@ class distribution_unittest(unittest.TestCase):
                     self.scipy_onebyone_params_iter(), onebyone_smp):
                 log_prob2.append(scipy_prob(one_smp, **one_params))
             log_prob2 = numpy.vstack(log_prob2)
-            log_prob2 = log_prob2.reshape(int(numpy.prod(self.shape)), -1).T
+            log_prob2 = log_prob2.reshape(int_prod(self.shape), -1).T
             log_prob2 = log_prob2.reshape(self.sample_shape + self.shape)
         else:
             log_prob2 = scipy_prob(smp, **self.scipy_params)
@@ -281,7 +286,7 @@ class distribution_unittest(unittest.TestCase):
                 smp2.append(self.scipy_dist.rvs(
                     size=(100000,)+self.sample_shape, **one_params))
             smp2 = numpy.vstack(smp2)
-            smp2 = smp2.reshape((int(numpy.prod(self.shape)), 100000)
+            smp2 = smp2.reshape((int_prod(self.shape), 100000)
                                 + self.sample_shape
                                 + self.cpu_dist.event_shape)
             smp2 = numpy.rollaxis(

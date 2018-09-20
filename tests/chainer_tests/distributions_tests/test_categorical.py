@@ -6,6 +6,10 @@ from chainer import testing
 from chainer.testing import array
 
 
+def int_prod(shape):
+    return int(numpy.prod(shape))  # size
+
+
 @testing.parameterize(*testing.product({
     'shape': [(3, 2), (1,)],
     'is_variable': [True, False],
@@ -80,9 +84,9 @@ class TestCategorical(testing.distribution_unittest):
         scipy_prob = self.scipy_dist.logpmf
 
         onebyone_smp = smp.reshape(
-            (int(numpy.prod(self.sample_shape)),
-             numpy.prod(self.shape),
-             int(numpy.prod(self.event_shape))))
+            (int_prod(self.sample_shape),
+             int_prod(self.shape),
+             int_prod(self.event_shape)))
         onebyone_smp = numpy.swapaxes(onebyone_smp, 0, 1)
         onebyone_smp = onebyone_smp.reshape((-1,) + self.sample_shape
                                             + self.event_shape)
@@ -93,7 +97,7 @@ class TestCategorical(testing.distribution_unittest):
             one_smp = numpy.eye(3)[one_smp]
             log_prob2.append(scipy_prob(one_smp, **one_params))
         log_prob2 = numpy.vstack(log_prob2)
-        log_prob2 = log_prob2.reshape(numpy.prod(self.shape), -1).T
+        log_prob2 = log_prob2.reshape(int_prod(self.shape), -1).T
         log_prob2 = log_prob2.reshape(self.sample_shape + self.shape)
         array.assert_allclose(log_prob1, log_prob2)
 
@@ -111,7 +115,7 @@ class TestCategorical(testing.distribution_unittest):
                 size=(100000,)+self.sample_shape, **one_params))
         smp2 = numpy.vstack(smp2)
         smp2 = smp2.dot(numpy.arange(3))
-        smp2 = smp2.reshape((numpy.prod(self.shape), 100000)
+        smp2 = smp2.reshape((int_prod(self.shape), 100000)
                             + self.sample_shape
                             + self.cpu_dist.event_shape)
         smp2 = numpy.rollaxis(
