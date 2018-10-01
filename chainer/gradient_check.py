@@ -415,7 +415,6 @@ class _CheckBackward(object):
     def _directional_backward_gradients(self, directions):
         func = self.func
         x_data = self.x_data
-        y_grad = self.y_grad
         params = self.params
         no_grads = self.no_grads
 
@@ -431,7 +430,7 @@ class _CheckBackward(object):
         # computational graph.
         # Note that `func` may not be a `Function` object.
 
-        y, y_grad = _set_y_grad(y, y_grad)
+        y, self.y_grad = _set_y_grad(y, self.y_grad)
 
         # Clear gradients which may exist if func calls backward inside of
         # itself.
