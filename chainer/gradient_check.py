@@ -335,10 +335,14 @@ class _CheckBackward(object):
         self.detect_nondifferentiable = detect_nondifferentiable
 
     def run(self):
+        y, test_vars = self._forward()
+        y0_data = [_.data for _ in y]
+
         directions = self._sample_directions()
 
         # Compute backward gradients
-        gx_backward, y0_data = self._directional_backward_gradients(directions)
+        gx_backward = self._directional_backward_gradients(
+            directions, y, test_vars)
 
         # Compute numeric gradients
         gx_numeric = self._directional_numeric_gradients(directions, y0_data)
@@ -408,21 +412,36 @@ class _CheckBackward(object):
         return [
             x for x, ignore in six.moves.zip(lst, ignore_list) if not ignore]
 
-    def _clear_grads(self, xs):
-        for x in xs:
-            x.grad_var = None
-
-    def _directional_backward_gradients(self, directions):
-        func = self.func
+    def _get_input_variables(self):
         x_data = self.x_data
         params = self.params
         no_grads = self.no_grads
 
         x_vars = [variable.Variable(x) for x in x_data]
-        variables = self._filter_list(x_vars, no_grads) + list(params)
+        variables, no_grad_variables = [], []
+        for x, no_grad in six.moves.zip(x_vars, no_grads):
+            if no_grad:
+                no_grad_variables.append(x)
+            else:
+                variables.append(x)
+        variables.extend(params)
+        return x_vars, (variables, no_grad_variables)
+
+    def _clear_grads(self, xs):
+        for x in xs:
+            x.grad_var = None
+
+    def _forward(self):
+        func = self.func
+
+        x_vars, test_vars = self._get_input_variables()
+        # forward computation may initialize params
         y = func(*x_vars)
         y = _as_tuple(y)
-        y0_data = [_.data for _ in y]
+        return y, test_vars
+
+    def _directional_backward_gradients(self, directions, y, test_vars):
+        variables, no_grad_variables = test_vars
 
         # All creators of `y` need to be the same because we only call
         # `y[0].backward` to call `backward` method of the creator.
@@ -440,8 +459,8 @@ class _CheckBackward(object):
         # `Variable.backward` method calls `Function.backward` of its creator.
         y.backward()
 
-        for no_grad, x in six.moves.zip(no_grads, x_vars):
-            if no_grad and x.grad is not None:
+        for x in no_grad_variables:
+            if x.grad is not None:
                 raise RuntimeError(
                     'gradient of int variable must be None')
 
@@ -452,7 +471,7 @@ class _CheckBackward(object):
             if g is not None:
                 gx_accum += (g.astype('d') * direction).sum()
 
-        return gx_accum, y0_data
+        return gx_accum
 
     def _directional_numeric_gradients(self, directions, y0_data):
         func = self.func
@@ -460,12 +479,10 @@ class _CheckBackward(object):
         y_grad = self.y_grad
         params = self.params
         eps = self.eps
-        no_grads = self.no_grads
         dtype = self.dtype
         detect_nondifferentiable = self.detect_nondifferentiable
 
-        x_vars = [variable.Variable(x) for x in x_data]
-        variables = self._filter_list(x_vars, no_grads) + list(params)
+        x_vars, (variables, no_grad_variables) = self._get_input_variables()
 
         if dtype is None:
             casted_data = [x.array for x in variables]
@@ -476,8 +493,8 @@ class _CheckBackward(object):
                 x.array.astype(dtype, copy=False) for x in variables]
 
             # Even skipped variable must have the same dtype.
-            for x, skip in six.moves.zip(x_vars, no_grads):
-                if skip and x.array.dtype.kind == 'f':
+            for x in no_grad_variables:
+                if x.array.dtype.kind == 'f':
                     x.array = x.array.astype(dtype, copy=False)
 
         xp = backend.get_array_module(*x_data)
