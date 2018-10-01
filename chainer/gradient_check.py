@@ -408,10 +408,6 @@ class _CheckBackward(object):
 
         return directions
 
-    def _filter_list(self, lst, ignore_list):
-        return [
-            x for x, ignore in six.moves.zip(lst, ignore_list) if not ignore]
-
     def _get_input_variables(self):
         x_data = self.x_data
         params = self.params
