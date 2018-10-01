@@ -454,6 +454,7 @@ class _CheckBackward(object):
         # Clear gradients which may exist if func calls backward inside of
         # itself.
         self._clear_grads(variables)
+        self._clear_grads(no_grad_variables)
 
         # We only need to call `backward` for one result `Variable`.
         # `Variable.backward` method calls `Function.backward` of its creator.
@@ -477,7 +478,6 @@ class _CheckBackward(object):
         func = self.func
         x_data = self.x_data
         y_grad = self.y_grad
-        params = self.params
         eps = self.eps
         dtype = self.dtype
         detect_nondifferentiable = self.detect_nondifferentiable
@@ -515,8 +515,8 @@ class _CheckBackward(object):
 
             # Clear gradients to support func that calls backward inside of
             # itself.
-            self._clear_grads(x_vars)
-            self._clear_grads(params)
+            self._clear_grads(variables)
+            self._clear_grads(no_grad_variables)
 
             ys = func(*x_vars)
             ys = _as_tuple(ys)
