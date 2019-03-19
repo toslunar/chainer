@@ -1728,7 +1728,7 @@ class TestUninitializedParameter(unittest.TestCase):
     def test_initialize_with_initializer(self):
         x = chainer.Parameter(initializers.Constant(self.a))
         self.check_constant_initialization(
-            x, self.a, np, chainer.get_device(np))
+            x, self.a, np, backend.CpuDevice())
 
     def test_initialize_dtype(self):
         initializer = initializers.Zero(np.float64)
@@ -1759,6 +1759,7 @@ class TestUninitializedParameter(unittest.TestCase):
         x.to_gpu()
         self.check_constant_initialization(
             x, self.a, cuda.cupy, backend.GpuDevice.from_device_id(0))
+
     @attr.multi_gpu(2)
     def test_initialize_to_noncurrent_gpu(self):
         x = chainer.Parameter(initializer=initializers.Constant(self.a))
@@ -1772,7 +1773,7 @@ class TestUninitializedParameter(unittest.TestCase):
         x.to_gpu()
         x.to_cpu()
         self.check_constant_initialization(
-            x, self.a, np, chainer.get_device(np))
+            x, self.a, np, backend.CpuDevice())
 
     @attr.ideep
     def test_initialize_to_intel64(self):
@@ -1787,7 +1788,7 @@ class TestUninitializedParameter(unittest.TestCase):
     @attr.chainerx
     def test_initialize_to_chx_native(self):
         x = chainer.Parameter(initializer=initializers.Constant(self.a))
-        x.to_device(np)
+        x.to_device('@numpy')
         x.to_chx()
         self.check_constant_initialization(
             x, self.a, chainerx, chainer.get_device('native:0'))
@@ -1859,7 +1860,7 @@ class TestUninitializedParameter(unittest.TestCase):
         x = chainer.Parameter()
         with testing.assert_warns(DeprecationWarning):
             x.zerograd()
-        x.to_device(np)
+        x.to_device('@numpy')
         x.to_chx()
         x.initialize((3, 2))
         self.check_zerograd(x, chainerx)
@@ -1867,7 +1868,7 @@ class TestUninitializedParameter(unittest.TestCase):
     @attr.chainerx
     def test_to_chx_zerograd(self):
         x = chainer.Parameter()
-        x.to_device(np)
+        x.to_device('@numpy')
         x.to_chx()
         with testing.assert_warns(DeprecationWarning):
             x.zerograd()
