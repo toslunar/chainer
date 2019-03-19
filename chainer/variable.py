@@ -1065,7 +1065,7 @@ class Variable(object):
         :class:`numpy.ndarray`.
         """
         intel64.check_ideep_available()
-        self.to_device(intel64)
+        self.to_device(intel64.Intel64Device())
 
     def to_chx(self):
         """Converts the array and gradient to ChainerX arrays without copy.
@@ -1757,7 +1757,7 @@ class Parameter(Variable):
         self.to_device(device)
 
     def to_intel64(self):
-        self.to_device(intel64)
+        self.to_device(intel64.Intel64Device())
 
     def to_chx(self):
         if not chainerx.is_available():
