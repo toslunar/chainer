@@ -106,7 +106,7 @@ def get_device(device_spec):
     if isinstance(device_spec, six.integer_types):
         # legacy spec of (gpu) device
         if device_spec >= 0:
-            return cuda.GpuDevice(device_spec)
+            return cuda.GpuDevice.from_device_id(device_spec)
         else:
             return _cpu.CpuDevice()
 
