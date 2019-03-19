@@ -74,8 +74,6 @@ def copyto(dst, src):
 def _get_default_device_from_module(xp):
     if xp is cuda.cupy:
         return cuda.GpuDevice(cuda.Device())
-    elif xp is intel64.ideep:
-        return intel64.Intel64Device()
     elif xp is chainerx:
         return _chainerx.ChainerxDevice(chainerx.get_default_device())
     else:
