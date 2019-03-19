@@ -1270,11 +1270,11 @@ class TestVariableToDevice(unittest.TestCase):
         assert x_var.grad_var._has_chainerx_array is (expected_xp is chainerx)
 
     def test_to_device_numpy(self):
-        self.check_to_device(self.x, self.gx, np, np)
+        self.check_to_device(self.x, self.gx, '@numpy', np)
 
     @attr.gpu
     def test_to_device_cupy(self):
-        self.check_to_device(self.x, self.gx, (cuda.cupy, 0), cuda.cupy)
+        self.check_to_device(self.x, self.gx, '@cupy:0', cuda.cupy)
 
     @attr.chainerx
     def test_to_device_chainerx(self):
@@ -1758,14 +1758,13 @@ class TestUninitializedParameter(unittest.TestCase):
         x = chainer.Parameter(initializer=initializers.Constant(self.a))
         x.to_gpu()
         self.check_constant_initialization(
-            x, self.a, cuda.cupy, chainer.get_device((cuda.cupy, 0)))
-
+            x, self.a, cuda.cupy, backend.GpuDevice.from_device_id(0))
     @attr.multi_gpu(2)
     def test_initialize_to_noncurrent_gpu(self):
         x = chainer.Parameter(initializer=initializers.Constant(self.a))
         x.to_gpu(1)
         self.check_constant_initialization(
-            x, self.a, cuda.cupy, chainer.get_device((cuda.cupy, 1)))
+            x, self.a, cuda.cupy, backend.GpuDevice.from_device_id(1))
 
     @attr.gpu
     def test_initialize_to_cpu(self):
@@ -1797,7 +1796,7 @@ class TestUninitializedParameter(unittest.TestCase):
     @attr.gpu
     def test_initialize_to_chx_cuda(self):
         x = chainer.Parameter(initializer=initializers.Constant(self.a))
-        x.to_device((cuda.cupy, 0))
+        x.to_device('@cupy:0')
         x.to_chx()
         self.check_constant_initialization(
             x, self.a, chainerx, chainer.get_device('cuda:0'))
@@ -1806,7 +1805,7 @@ class TestUninitializedParameter(unittest.TestCase):
     @attr.multi_gpu(2)
     def test_initialize_to_chx_cuda_noncurrent_gpu(self):
         x = chainer.Parameter(initializer=initializers.Constant(self.a))
-        x.to_device((cuda.cupy, 1))
+        x.to_device('@cupy:1')
         x.to_chx()
         self.check_constant_initialization(
             x, self.a, chainerx, chainer.get_device('cuda:1'))
