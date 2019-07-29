@@ -84,7 +84,8 @@ class TestHuberLoss(unittest.TestCase):
             return functions.huber_loss(x, t, delta=1, reduce=self.reduce)
 
         gradient_check.check_backward(
-            f, (x_data, t_data), y_grad, **self.backward_options)
+            f, (x_data, t_data), y_grad,
+            dtype=numpy.float64, **self.backward_options)
 
     def test_backward_cpu(self):
         self.check_backward(self.x, self.t, self.gy)
@@ -109,7 +110,7 @@ class TestHuberLoss(unittest.TestCase):
 
         gradient_check.check_double_backward(
             f, (x_data, t_data), y_grad, (x_grad_grad, t_grad_grad),
-            **self.double_backward_options)
+            dtype=numpy.float64, **self.double_backward_options)
 
     def test_double_backward_cpu(self):
         self.check_double_backward(self.x, self.t, self.gy, self.ggx, self.ggt)
