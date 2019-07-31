@@ -1,7 +1,6 @@
 import unittest
 
 import numpy
-import six
 
 import chainer
 from chainer import functions
@@ -134,8 +133,8 @@ def inject_backend_tests():
              (slice(None), slice(None, 2)),
              (slice(None), slice(2, 5)),
              (slice(None), slice(5, None))],
-         'grad_outputs_is_none': [False, True, False],
-         'skip_double_backward_test': True},  # TODO(hvy): Test double backward
+         'output_indices': [0, 2],
+         },
     ],
     [
         {'dtype': numpy.float16},
@@ -146,7 +145,7 @@ def inject_backend_tests():
 @inject_backend_tests()
 class TestSplitAxis(testing.FunctionTestCase):
 
-    grad_outputs_is_none = None
+    output_indices = None
 
     def generate_inputs(self):
         shape = self.shape
@@ -154,30 +153,20 @@ class TestSplitAxis(testing.FunctionTestCase):
         x = numpy.arange(numpy.prod(shape), dtype=dtype).reshape(shape)
         return x,
 
-    def _generate_grad_outputs(self, outputs_template):
-        grad_outputs = self.generate_grad_outputs(outputs_template)
-        return grad_outputs
-
-    def generate_grad_outputs(self, outputs_template):
-        grad_outputs = tuple([
-            numpy.random.uniform(-1, 1, a.shape).astype(a.dtype)
-            for a in outputs_template])
-
-        if self.grad_outputs_is_none is not None:
-            grad_outputs = tuple(
-                None if is_none else g for is_none, g,
-                in six.moves.zip(self.grad_outputs_is_none, grad_outputs))
-
-        return grad_outputs
-
     def forward(self, inputs, device):
         x, = inputs
-        return functions.split_axis(
+        ys = functions.split_axis(
             x, self.ys_section, self.axis, force_tuple=True)
+        if self.output_indices is not None:
+            ys = tuple(ys[i] for i in self.output_indices)
+        return ys
 
     def forward_expected(self, inputs):
         x, = inputs
-        return tuple([x[s] for s in self.slices])
+        ys = tuple([x[s] for s in self.slices])
+        if self.output_indices is not None:
+            ys = tuple(ys[i] for i in self.output_indices)
+        return ys
 
 
 @inject_backend_tests()
