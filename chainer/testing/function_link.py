@@ -450,14 +450,18 @@ class FunctionTestCase(FunctionTestBase, unittest.TestCase):
 
     """
 
+    from chainer.testing import condition
+    @condition.repeat(100)
     def test_forward(self, backend_config):
         """Tests forward computation."""
         self.run_test_forward(backend_config)
 
+    @condition.repeat(100)
     def test_backward(self, backend_config):
         """Tests backward computation."""
         self.run_test_backward(backend_config)
 
+    @condition.repeat(100)
     def test_double_backward(self, backend_config):
         """Tests double-backward computation."""
         self.run_test_double_backward(backend_config)
