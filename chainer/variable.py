@@ -1436,6 +1436,7 @@ class Variable(object):
             return
 
         ref_self = [self]
+        weakref_self = weakref.ref(self)
 
         def cont(**kwargs):
             assert_moved = True
@@ -1449,7 +1450,6 @@ class Variable(object):
                 raise RuntimeError(
                     'the continuation Variable.backward(_return_cont=True) '
                     'has been consumed')
-            weakref_self = weakref.ref(ref_self[0])
             outputs = ref_self
             with chainer.using_config(
                     'enable_backprop', enable_double_backprop):
