@@ -1429,13 +1429,21 @@ class Variable(object):
             if loss_scale is not None:
                 self.grad *= loss_scale
 
+        node = self.node
+        grad_var = self.grad_var
+        self.grad_var = None
+
+        # TODO(kataoka): grad_var=None should not be passed to
+        # _backprop_to_all, but it is working because grad_var is
+        # immediately popped away as None = _backprop_utils._reduce([None])
+
         if not return_cont:
             with chainer.using_config(
                     'enable_backprop', enable_double_backprop):
-                _backprop_to_all([self], retain_grad, loss_scale)
+                _backprop_to_all([(node, grad_var)], retain_grad, loss_scale)
             return
 
-        ref_self = [self]
+        ref_self = [(node, grad_var)]
         weakref_self = weakref.ref(self)
 
         def cont(**kwargs):
@@ -1599,6 +1607,15 @@ class Variable(object):
 
 
 def _backprop_to_all(outputs, retain_grad, loss_scale):
+    """Backprop to all input variables
+
+    Args:
+        outputs (list of tuple): each tuple is (y_node, y_grad_var).
+            y_grad_var should not be None.
+        retain_grad (bool): see docstring of Variable.backward
+        loss_scale (float): see docstring of Variable.backward
+
+    """
     OrderedDict = chainer.utils._collections.OrderedDict  # fix py2 memory leak
 
     cand_funcs = []
@@ -1611,30 +1628,19 @@ def _backprop_to_all(outputs, retain_grad, loss_scale):
             heapq.heappush(cand_funcs, (-cand.rank, len(seen_set), cand))
             seen_set.add(ref_cand)
 
-    grads = _backprop_utils.GradTable(load_if_new=True)
+    grads = _backprop_utils.GradTable(accumulate_grad_inputs=True)
 
-    root_nodes = set()
     leaf_nodes = set()
 
-    for y_var in outputs:
-        # TODO(sonots): Implement for ChainerX
-        if y_var.xp is chainerx:
-            raise NotImplementedError()
+    for y, gy in outputs:
+        grads.accumulate(y, gy)
 
-        y = y_var.node
-        root_nodes.add(weakref.ref(y))
-        grads[y] = y_var.grad_var
-
-        y._check_old_style_gradient()
         func = y.creator_node
         if func is None:  # leaf
             leaf_nodes.add(y)
         else:
             add_cand(func)
-        del y_var, y, func
-
-    if len(root_nodes) != len(outputs):
-        raise RuntimeError('output variables should be distinct')
+        del y, func
 
     # remove references
     del outputs[:]
@@ -1653,12 +1659,14 @@ def _backprop_to_all(outputs, retain_grad, loss_scale):
             grads.pop(y())  # access via weak ref
             for y in func.outputs
         ]
-        for y, gy in six.moves.zip(func.outputs, out_grad):
-            y = y()
-            if y is not None and weakref.ref(y) not in root_nodes:
-                y._set_grad_var_if_available(
-                    gy if retain_grad else None)
-            del y, gy
+        if retain_grad:
+            # The gradients of the outputs of `func` are final. Store them if
+            # retain_grad=True.
+            for y, gy in six.moves.zip(func.outputs, out_grad):
+                y = y()
+                if y is not None:
+                    y._set_grad_var_if_available(gy)
+                del y, gy
 
         if not target_input_indexes:
             del out_grad
@@ -1692,13 +1700,7 @@ def _backprop_to_all(outputs, retain_grad, loss_scale):
             for i in target_input_indexes:
                 x = inputs[i]
                 if x not in in_grad:
-                    if weakref.ref(x) in root_nodes:
-                        raise RuntimeError(
-                            'an output variable depends on another output '
-                            'variable')
                     in_grad[x] = grads.get_as_list(x)
-                    # to reduce memory usage
-                    x._set_grad_var_if_available(None)
 
             _backprop_utils.backprop_step(
                 func, target_input_indexes, out_grad, in_grad, is_debug)
@@ -1706,7 +1708,7 @@ def _backprop_to_all(outputs, retain_grad, loss_scale):
             for hook in hooks:
                 hook.backward_postprocess(
                     func, tuple(in_data), tuple(out_grad_array))
-        del in_data, out_grad_array
+        del in_data, out_grad, out_grad_array
 
         for x, gx in in_grad.items():
             if not gx:  # gradient == None
