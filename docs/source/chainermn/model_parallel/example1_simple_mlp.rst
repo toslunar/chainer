@@ -64,43 +64,43 @@ Now we can run a model parallel architecture.
 
 There is an alternative API to define the same model without explicitly defining communication paths::
 
-	class MLP0SubA(chainer.Chain):
-	    def __init__(self, comm, n_out):
-	        super(MLP0SubA, self).__init__(
-	            l1=L.Linear(784, n_out))
-	
-	    def __call__(self, x):
-	        return F.relu(self.l1(x))
+    class MLP0SubA(chainer.Chain):
+        def __init__(self, comm, n_out):
+            super(MLP0SubA, self).__init__(
+                l1=L.Linear(784, n_out))
 
-	class MLP0SubB(chainer.Chain):
-	    def __init__(self, comm):
-	        super(MLP0SubB, self).__init__()
-	
-	    def __call__(self, y):
-	        return y
+        def __call__(self, x):
+            return F.relu(self.l1(x))
 
-	class MLP0(chainermn.MultiNodeChainList):
-	    # Model on worker 0.
-	    def __init__(self, comm, n_out):
-	        super(MLP0, self).__init__(comm=comm)
-	        self.add_link(MLP0SubA(comm, n_out), rank_in=None, rank_out=1)
-	        self.add_link(MLP0SubB(comm), rank_in=1, rank_out=None)
+    class MLP0SubB(chainer.Chain):
+        def __init__(self, comm):
+            super(MLP0SubB, self).__init__()
 
-	class MLP1Sub(chainer.Chain):
-	    def __init__(self, n_units, n_out):
-	        super(MLP1Sub, self).__init__(
-	            l2=L.Linear(None, n_units),
-	            l3=L.Linear(None, n_out))
-	
-	    def __call__(self, h0):
-	        h1 = F.relu(self.l2(h0))
-	        return self.l3(h1)
+        def __call__(self, y):
+            return y
 
-	class MLP1(chainermn.MultiNodeChainList):
-	    # Model on worker 1.
-	    def __init__(self, comm, n_units, n_out):
-	        super(MLP1, self).__init__(comm=comm)
-	        self.add_link(MLP1Sub(n_units, n_out), rank_in=0, rank_out=0)
+    class MLP0(chainermn.MultiNodeChainList):
+        # Model on worker 0.
+        def __init__(self, comm, n_out):
+            super(MLP0, self).__init__(comm=comm)
+            self.add_link(MLP0SubA(comm, n_out), rank_in=None, rank_out=1)
+            self.add_link(MLP0SubB(comm), rank_in=1, rank_out=None)
+
+    class MLP1Sub(chainer.Chain):
+        def __init__(self, n_units, n_out):
+            super(MLP1Sub, self).__init__(
+                l2=L.Linear(None, n_units),
+                l3=L.Linear(None, n_out))
+
+        def __call__(self, h0):
+            h1 = F.relu(self.l2(h0))
+            return self.l3(h1)
+
+    class MLP1(chainermn.MultiNodeChainList):
+        # Model on worker 1.
+        def __init__(self, comm, n_units, n_out):
+            super(MLP1, self).__init__(comm=comm)
+            self.add_link(MLP1Sub(n_units, n_out), rank_in=0, rank_out=0)
 
 ``MultiNodeChainList`` enables to define a multi model architecture, by adding non-connected component with ``add_link``.
 Two arguments ``rank_in`` and ``rank_out`` specifies from which process the added link receives their inputs, and to which process it sends their outputs.
