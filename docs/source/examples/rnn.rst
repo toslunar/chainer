@@ -326,7 +326,7 @@ Backprop Through Time is implemented as follows.
            optimizer.update()  # Update the parameters
 
    updater = BPTTUpdater(train_iter, optimizer, bprop_len)  # instantiation
-   
+
 In this case, we update the parameters on every ``bprop_len`` consecutive words.
 The call of ``unchain_backward`` cuts the history of computation accumulated to the LSTM links.
 The rest of the code for setting up Trainer is almost same as one given in the previous tutorial.

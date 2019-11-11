@@ -24,7 +24,7 @@ The Notations of Sequence
 
 The seq2seq model converts an input sequence into an output sequence.
 Let the input sequence and the output sequence be :math:`\bf X` and :math:`\bf Y`.
-The :math:`i`-th element of the input sequence is represented as :math:`{\bf x}_i`, 
+The :math:`i`-th element of the input sequence is represented as :math:`{\bf x}_i`,
 and the :math:`j`-th element of the output sequence is also represented as :math:`{\bf y}_j`.
 Generally, each of the :math:`{\bf x}_i` and the :math:`{\bf y}_j` is the one-hot vector of
 the symbols. For example, in natural language processing(NLP), the one-hot vector
@@ -33,9 +33,9 @@ represents the word and its size becomes the vocabulary size.
 Let's think about the seq2seq model in the context of NLP.
 Let the vocabulary of the inputs and the outputs be :math:`{\mathcal V}^{(s)}`
 and :math:`{\mathcal V}^{(t)}`, all the elements :math:`{\bf x}_i` and :math:`{\bf y}_j`
-satisfy :math:`{\bf x}_i \in \mathbb{R}^{|{\mathcal V}^{(s)}|}` and 
+satisfy :math:`{\bf x}_i \in \mathbb{R}^{|{\mathcal V}^{(s)}|}` and
 :math:`{\bf y}_i \in \mathbb{R}^{|{\mathcal V}^{(t)}|}`.
-The input sequence :math:`\bf X` and the output sequence :math:`\bf Y` are represented as 
+The input sequence :math:`\bf X` and the output sequence :math:`\bf Y` are represented as
 the following equations:
 
 .. math::
@@ -50,8 +50,8 @@ of `EOS`, which is the virtual word representing the end of the sentence.
 The Notations of Conditional Probability :math:`P({\bf Y}|{\bf X})`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Next, let's think about the conditional probability :math:`P({\bf Y}|{\bf X})` generating 
-the output sequence :math:`\bf Y` when the input sequence :math:`\bf X` is given. 
+Next, let's think about the conditional probability :math:`P({\bf Y}|{\bf X})` generating
+the output sequence :math:`\bf Y` when the input sequence :math:`\bf X` is given.
 The purpose of seq2seq model is modeling the probability :math:`P({\bf Y}|{\bf X})`.
 However, the seq2seq model does not model the probability :math:`P({\bf Y}|{\bf X})` directly.
 Actually, it models the probability :math:`P({\bf y}_j|{\bf Y}_{<j}, {\bf X})`, which is the
@@ -120,12 +120,12 @@ output layer.
 In the explanation, we use the following symbols:
 
 =======================  =========================================================================
-Symbol                   Definition 
+Symbol                   Definition
 =======================  =========================================================================
 :math:`H`                the size of the hidden vector
 :math:`D`                the size of the embedding vector
-:math:`{\bf x}_i`        the one-hot vector of :math:`i`-th word in the input sentence 
-:math:`{\bf \bar x}_i`   the embedding vector of :math:`i`-th word in the input sentence 
+:math:`{\bf x}_i`        the one-hot vector of :math:`i`-th word in the input sentence
+:math:`{\bf \bar x}_i`   the embedding vector of :math:`i`-th word in the input sentence
 :math:`{\bf E}^{(s)}`    Embedding matrix of the encoder
 :math:`{\bf h}_i^{(s)}`  the :math:`i`-th hidden vector of the encoder
 :math:`{\bf y}_j`        the one-hot vector of :math:`j`-th word in the output sentence
@@ -199,7 +199,7 @@ When processing the :math:`j`-th embedding vector, the input and the output of t
 are the following:
 
 - The input is :math:`{\bf \bar y}_j` : the embedding vector
-- The output is :math:`{\bf h}_j^{(t)}` : the hidden vector of :math:`j`-th position    
+- The output is :math:`{\bf h}_j^{(t)}` : the hidden vector of :math:`j`-th position
 
 For example, when using the uni-directional RNN of one layer, the process
 can be represented as the following function :math:`\Psi^{(t)}`:
@@ -247,7 +247,7 @@ We will now provide an overview of the example and explain its implementation in
 2.1 Model Overview
 -------------------
 
-In this simple example, an input sequence is processed by a stacked **LSTM-RNN** 
+In this simple example, an input sequence is processed by a stacked **LSTM-RNN**
 (long short-term memory recurrent neural networks) and
 it is encoded as a fixed-size vector. The output sequence is also processed by
 another stacked LSTM-RNN. At decoding time, an output sequence is generated using
@@ -522,7 +522,7 @@ While you are training the model, you can get the validation results:
     # result : Nous savions que le gouvernement avait <UNK> plusieurs fois , comme le <UNK> <UNK> , le <UNK> ou le <UNK> <UNK> .
     # expect : Nous savions que le gouvernement avait tenté plusieurs choses comme lancer des parfums aux <UNK> ou organiser des soirées de <UNK>
     ...
-    
+
 3. Reference
 =============
 - [1] `Sequence to Sequence Learning with Neural Networks <https://papers.nips.cc/paper/5346-sequence-to-sequence-learning-with-neural-networks.pdf>`_

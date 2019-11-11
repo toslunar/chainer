@@ -52,16 +52,16 @@ To explain the models with the figures below, we will use the following
 symbols.
 
 =====================   ===============================================================================================================================
-Symbol                  Definition                                               
+Symbol                  Definition
 =====================   ===============================================================================================================================
-:math:`|\mathcal{V}|`   The size of vocabulary                                   
-:math:`D`               The size of embedding vector                             
-:math:`{\bf v}_t`       A one-hot center word vector                             
+:math:`|\mathcal{V}|`   The size of vocabulary
+:math:`D`               The size of embedding vector
+:math:`{\bf v}_t`       A one-hot center word vector
 :math:`V_{t \pm C}`     A set of :math:`2C` context vectors around :math:`{\bf v}_t`, namely, :math:`\{{\bf v}_{t+c}\}_{c=-C}^C \backslash {\bf v}_t`
-:math:`{\bf l}_H`       An embedding vector of an input word vector              
-:math:`{\bf l}_O`       An output vector of the network                          
-:math:`{\bf W}_H`       The embedding matrix for inputs                          
-:math:`{\bf W}_O`       The embedding matrix for outputs                         
+:math:`{\bf l}_H`       An embedding vector of an input word vector
+:math:`{\bf l}_O`       An output vector of the network
+:math:`{\bf W}_H`       The embedding matrix for inputs
+:math:`{\bf W}_O`       The embedding matrix for outputs
 =====================   ===============================================================================================================================
 
 .. note::
@@ -106,7 +106,7 @@ given a center word :math:`{\bf v}_t` is defined as follows:
 
 This model learns to predict center word :math:`{\bf v}_t` when context words
 :math:`V_{t \pm C}` is given. When you give a set of context words
-:math:`V_{t \pm C}` to the network, you can estimate the probability of the 
+:math:`V_{t \pm C}` to the network, you can estimate the probability of the
 center word :math:`\hat {\bf v}_t` as follows:
 
 1. Calculate a mean embedding vector over all context words: :math:`{\bf l}_H = \frac{1}{2C} \sum_{V_{t \pm C}} {\bf W}_H {\bf v}_{t+c}`
@@ -204,7 +204,7 @@ Next, let's define a network for Skip-gram.
       and ``(batch_size, n_context)``, respectively.
     * The ``batch_size`` means the size of mini-batch, and ``n_context`` means the
       number of context words.
-      
+
 First, we obtain the embedding vectors of contexts by ``e = self.embed(contexts)``.
 Then ``F.broadcast_to(x[:, None], (batch_size, n_context))`` performs broadcasting of
 ``x`` (its shape is ``(batch_size,)``) to ``(batch_size, n_context)`` by copying the
@@ -235,7 +235,7 @@ Then define an iterator to make mini-batches that contain a set of center words 
 the list of Document IDs:
 
     .. code-block:: console
-    
+
         >>> train
         array([ 0,  1,  2, ..., 39, 26, 24], dtype=int32)
         >>> val
@@ -306,7 +306,7 @@ the list of Document IDs:
     # epoch: 20
     Training model: skipgram
     Output type: hsm
-    
+
     n_vocab: 10000
     data length: 100
     epoch       main/loss   validation/main/loss
@@ -338,7 +338,7 @@ the list of Document IDs:
 
     $ pwd
     /root2chainer/chainer/examples/word2vec
-    $ python search.py 
+    $ python search.py
     >> apple
     query: apple
     compaq: 0.6169619560241699
@@ -346,7 +346,7 @@ the list of Document IDs:
     retailer: 0.4904134273529053
     maker: 0.4684058427810669
     computer: 0.4652436673641205
-    >> animal      
+    >> animal
     query: animal
     beauty: 0.5680124759674072
     human: 0.5404794216156006

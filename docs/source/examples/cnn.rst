@@ -36,7 +36,7 @@ LeNet5
 ''''''
 
 Here, let's start by defining LeNet5 [LeCun98]_ in Chainer.
-In this example, we show 
+In this example, we show
 `a simplified version of LeNet5 <http://deeplearning.net/tutorial/lenet.html#lenet>`_
 introduced in Deep Learning Tutorials.
 This is a ConvNet model that has 5 layers comprised of 3 convolutional layers

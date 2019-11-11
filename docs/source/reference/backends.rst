@@ -111,7 +111,7 @@ See :doc:`../../tips` and :doc:`../../performance` for details.
    :nosignatures:
 
    chainer.backends.intel64.is_ideep_available
-   
+
 ChainerX
 --------
 

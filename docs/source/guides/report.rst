@@ -45,7 +45,7 @@ observed values.
 There are also a global API :func:`chainer.report`, which reports observed values
 with the current reporter object. In this case, `current` means which ``with``
 statement scope the current code line is in. This function calls the
-:func:`Reporter.report()` method of the current reporter. 
+:func:`Reporter.report()` method of the current reporter.
 
 .. doctest::
 
@@ -104,7 +104,7 @@ So, you know almost everything about :class:`~chainer.Reporter`.
 However, there is one more thing. It is what is the naming rule for the reported values,
 especially when the values are reported from a link that is not the root of the link hierarchy.
 
-As we explained in the previous section, the root of links is named as ``'main'`` 
+As we explained in the previous section, the root of links is named as ``'main'``
 by the the :class:`~chainer.training.StandardUpdater` and the names of reported
 values in the root have the prefix ``'main/'``.
 When the values are reported from a link that is not the root of the link hierarchy,

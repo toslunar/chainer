@@ -149,7 +149,7 @@ The main steps are twofold:
                 return self.l3(h)
 
         model = MyNetwork()
-        
+
         gpu_id = 0  # Set to -1 if you use CPU
         if gpu_id >= 0:
             model.to_gpu(gpu_id)

@@ -13,7 +13,7 @@ Convolution/Deconvolution utilities
 
    chainer.utils.get_conv_outsize
    chainer.utils.get_deconv_outsize
-   
+
 
 Common algorithms
 -------------------
@@ -57,7 +57,7 @@ Summary and DictSummary
 
    chainer.Summary
    chainer.DictSummary
-   
+
 
 Sparse utilities
 ---------------------------
@@ -82,7 +82,7 @@ converting between a :class:`chainer.Variable` and these representations.
 
    chainer.utils.CooMatrix
    chainer.utils.to_coo
-   
+
 
 Experimental feature annotation
 ---------------------------------

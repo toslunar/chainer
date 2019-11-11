@@ -75,14 +75,14 @@ they can distinguish real and counterfeit notes... Eventually, the counterfeiter
 be able to produce counterfeit banknotes look as real as genuine ones.
 
 The training process is explained by the following mathematical expressions.
-First, since the discriminator :math:`D({\bf s})` is the probability 
+First, since the discriminator :math:`D({\bf s})` is the probability
 that a sample :math:`{\bf s}` is generated from the data distribution at,
 it can be expressed as follows:
 
 .. math::
     D({\bf s}) = \frac{p({\bf s})}{p({\bf s}) + p_{\mathrm{model}}({\bf s})}
 
-Then, when we match 
+Then, when we match
 the data distribution :math:`{\bf s} \sim p({\bf s})` and
 the distribution of generated samples by :math:`G`,
 it means that we should minimize the dissimilarity between
@@ -155,7 +155,7 @@ First, let's define a network for the generator.
 When we make a network in Chainer, there are some conventions:
 
 1. Define a network class which inherits :class:`~chainer.Chain`.
-2. Make :class:`chainer.links`\ 's instances in the ``init_scope():`` 
+2. Make :class:`chainer.links`\ 's instances in the ``init_scope():``
    of the initializer ``__init__``.
 3. Define network connections in the ``__call__`` operator by using
    the :class:`chainer.links`\ 's instances and :class:`chainer.functions`.
@@ -209,7 +209,7 @@ However, there are minor different points:
 Let's retrieve the CIFAR-10 dataset by using Chainer's dataset utility function
 :class:`~chainer.datasets.get_cifar10`. CIFAR-10 is a set of small natural images.
 Each example is an RGB color image of size 32x32. In the original images,
-each of R, G, B of pixels is represented by one-byte unsigned integer 
+each of R, G, B of pixels is represented by one-byte unsigned integer
 (i.e. from 0 to 255).
 This function changes the scale of pixel values into ``[0, scale]`` float values.
 
@@ -258,7 +258,7 @@ So, we need to define a custom updater for GAN training.
 The definition of ``DCGANUpdater`` is a little complicated. However, it just
 minimizes the loss of the discriminator and that of the generator alternately.
 
-As you can see in the class definition, ``DCGANUpdater`` inherits 
+As you can see in the class definition, ``DCGANUpdater`` inherits
 :class:`~chainer.training.updaters.StandardUpdater`. In this case,
 almost all necessary functions are defined in
 :class:`~chainer.training.updaters.StandardUpdater`,
@@ -275,7 +275,7 @@ we just override the functions of ``__init__`` and ``update_core``.
 
 In the initializer ``__init__``, an additional keyword argument ``models`` is
 required as you can see the code below. Also, we use keyword arguments
-``iterator``, ``optimizer`` and ``device``. 
+``iterator``, ``optimizer`` and ``device``.
 It should be noted that the ``optimizer`` augment takes a dictionary.
 The two different models require two different optimizers.
 To specify the different optimizers for the models, we give a dictionary,
@@ -338,12 +338,12 @@ We can run the example as follows.
 
     $ pwd
     /root2chainer/chainer/examples/dcgan
-    $ python train_dcgan.py --gpu 0 
+    $ python train_dcgan.py --gpu 0
     GPU: 0
     # Minibatch-size: 50
     # n_hidden: 100
     # epoch: 1000
-    
+
     epoch       iteration   gen/loss    dis/loss  ................]  0.01%
     0           100         1.2292      1.76914     
          total [..................................................]  0.02%
